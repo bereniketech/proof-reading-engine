@@ -1,0 +1,368 @@
+import { randomUUID } from 'node:crypto';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import type { Request, Response } from 'express';
+import { Router } from 'express';
+import { fileTypeFromBuffer } from 'file-type';
+import multer, { MulterError } from 'multer';
+import { createUserScopedSupabaseClient } from '../lib/supabase.js';
+
+interface AuthenticatedUser {
+  id: string;
+}
+
+interface StoredUpload {
+  path: string;
+  originalName: string;
+  mimeType: string;
+}
+
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+const uploadDirectory = path.resolve('uploads');
+const allowedMimeTypes = new Set([
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/pdf',
+  'text/plain',
+]);
+const mimeToFileType: Record<string, 'docx' | 'pdf' | 'txt'> = {
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/pdf': 'pdf',
+  'text/plain': 'txt',
+};
+
+const router = Router();
+
+class UploadValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UploadValidationError';
+  }
+}
+
+function getBearerToken(authorizationHeader: string | undefined): string | null {
+  if (!authorizationHeader) {
+    return null;
+  }
+
+  const [scheme, token] = authorizationHeader.split(' ');
+  if (scheme !== 'Bearer' || !token) {
+    return null;
+  }
+
+  return token;
+}
+
+function getAuthenticatedUser(response: Response): AuthenticatedUser | null {
+  const user = response.locals.user;
+
+  if (!user || typeof user.id !== 'string') {
+    return null;
+  }
+
+  return {
+    id: user.id,
+  };
+}
+
+async function ensureUploadDirectory(): Promise<void> {
+  await mkdir(uploadDirectory, { recursive: true });
+}
+
+function getFileExtensionFromMimeType(mimeType: string): 'docx' | 'pdf' | 'txt' | null {
+  return mimeToFileType[mimeType] ?? null;
+}
+
+function getOriginalFileExtension(filename: string): string {
+  return path.extname(filename).toLowerCase();
+}
+
+async function cleanupUploadedFiles(files: Array<StoredUpload | null>): Promise<void> {
+  await Promise.all(
+    files
+      .filter((file): file is StoredUpload => file !== null)
+      .map(async (file) => {
+        await rm(file.path, { force: true });
+      }),
+  );
+}
+
+async function validateUploadedContent(file: StoredUpload, fileType: 'docx' | 'pdf' | 'txt'): Promise<string | null> {
+  if (fileType === 'txt') {
+    const content = await readFile(file.path);
+    if (content.includes(0x00)) {
+      return 'Invalid TXT file content.';
+    }
+
+    return null;
+  }
+
+  const bytes = await readFile(file.path);
+  const detected = await fileTypeFromBuffer(bytes);
+
+  if (fileType === 'pdf') {
+    if (!detected || detected.mime !== 'application/pdf') {
+      return 'Uploaded PDF content does not match its declared type.';
+    }
+
+    return null;
+  }
+
+  if (!detected) {
+    return 'Unable to verify DOCX file signature.';
+  }
+
+  const docxMimeTypes = new Set([
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/zip',
+  ]);
+
+  if (!docxMimeTypes.has(detected.mime)) {
+    return 'Uploaded DOCX content does not match its declared type.';
+  }
+
+  return null;
+}
+
+const storage = multer.diskStorage({
+  destination: async (_req, _file, callback) => {
+    try {
+      await ensureUploadDirectory();
+      callback(null, uploadDirectory);
+    } catch (error) {
+      callback(error as Error, uploadDirectory);
+    }
+  },
+  filename: (_req, file, callback) => {
+    const fileType = getFileExtensionFromMimeType(file.mimetype);
+
+    if (!fileType) {
+      callback(new Error(`Unsupported MIME type: ${file.mimetype}`), file.originalname);
+      return;
+    }
+
+    callback(null, `${randomUUID()}.${fileType}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: MAX_FILE_SIZE_BYTES,
+    files: 2,
+  },
+  fileFilter: (_req, file, callback) => {
+    const expectedFileExtension = getFileExtensionFromMimeType(file.mimetype);
+    const originalFileExtension = getOriginalFileExtension(file.originalname);
+
+    if (!allowedMimeTypes.has(file.mimetype) || !expectedFileExtension) {
+      callback(
+        new UploadValidationError(`Unsupported file type for "${file.fieldname}". Allowed types: DOCX, PDF, TXT.`),
+      );
+      return;
+    }
+
+    if (originalFileExtension !== `.${expectedFileExtension}`) {
+      callback(
+        new UploadValidationError(
+          `File extension does not match MIME type for "${file.fieldname}". Expected .${expectedFileExtension}.`,
+        ),
+      );
+      return;
+    }
+
+    callback(null, true);
+  },
+});
+
+const uploadFields = upload.fields([
+  { name: 'file', maxCount: 1 },
+  { name: 'reference', maxCount: 1 },
+]);
+
+function asStoredUpload(file: Express.Multer.File | undefined): StoredUpload | null {
+  if (!file) {
+    return null;
+  }
+
+  return {
+    path: file.path,
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+  };
+}
+
+router.post('/upload', uploadFields, async (req: Request, res: Response) => {
+  const authToken = getBearerToken(req.header('authorization'));
+  const authenticatedUser = getAuthenticatedUser(res);
+
+  if (!authToken || !authenticatedUser) {
+    res.status(401).json({
+      success: false,
+      error: 'Unauthorized',
+    });
+    return;
+  }
+
+  const uploadedFiles = req.files as Record<string, Express.Multer.File[]> | undefined;
+  const mainFile = asStoredUpload(uploadedFiles?.file?.[0]);
+  const referenceFile = asStoredUpload(uploadedFiles?.reference?.[0]);
+
+  if (!mainFile) {
+    await cleanupUploadedFiles([referenceFile]);
+    res.status(400).json({
+      success: false,
+      error: 'The "file" field is required.',
+    });
+    return;
+  }
+
+  const fileType = getFileExtensionFromMimeType(mainFile.mimeType);
+  if (!fileType) {
+    await cleanupUploadedFiles([mainFile, referenceFile]);
+    res.status(400).json({
+      success: false,
+      error: 'Unsupported uploaded file type. Allowed types: DOCX, PDF, TXT.',
+    });
+    return;
+  }
+
+  const mainFileValidationError = await validateUploadedContent(mainFile, fileType);
+  if (mainFileValidationError) {
+    await cleanupUploadedFiles([mainFile, referenceFile]);
+    res.status(400).json({
+      success: false,
+      error: mainFileValidationError,
+    });
+    return;
+  }
+
+  const referenceFileType = referenceFile ? getFileExtensionFromMimeType(referenceFile.mimeType) : null;
+  if (referenceFile && !referenceFileType) {
+    await cleanupUploadedFiles([mainFile, referenceFile]);
+    res.status(400).json({
+      success: false,
+      error: 'Unsupported reference file type. Allowed types: DOCX, PDF, TXT.',
+    });
+    return;
+  }
+
+  if (referenceFile && referenceFileType) {
+    const referenceValidationError = await validateUploadedContent(referenceFile, referenceFileType);
+    if (referenceValidationError) {
+      await cleanupUploadedFiles([mainFile, referenceFile]);
+      res.status(400).json({
+        success: false,
+        error: referenceValidationError,
+      });
+      return;
+    }
+  }
+
+  try {
+    const supabase = createUserScopedSupabaseClient(authToken);
+    const { data, error } = await supabase
+      .from('sessions')
+      .insert({
+        user_id: authenticatedUser.id,
+        filename: mainFile.originalName,
+        file_type: fileType,
+        status: 'parsing',
+      })
+      .select('id, status')
+      .single();
+
+    if (error || !data) {
+      await cleanupUploadedFiles([mainFile, referenceFile]);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create upload session.',
+      });
+      return;
+    }
+
+    const uploadMetadata = {
+      sessionId: data.id,
+      uploadedAt: new Date().toISOString(),
+      file: mainFile,
+      reference: referenceFile,
+    };
+
+    try {
+      await writeFile(
+        path.join(uploadDirectory, `${data.id}.json`),
+        JSON.stringify(uploadMetadata, null, 2),
+        'utf8',
+      );
+    } catch {
+      await supabase.from('sessions').delete().eq('id', data.id);
+      await cleanupUploadedFiles([mainFile, referenceFile]);
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to store upload metadata.',
+      });
+      return;
+    }
+
+    res.status(201).json({
+      sessionId: data.id,
+      status: data.status,
+    });
+  } catch {
+    await cleanupUploadedFiles([mainFile, referenceFile]);
+    res.status(500).json({
+      success: false,
+      error: 'Unexpected upload failure.',
+    });
+  }
+});
+
+router.use((error: unknown, _req: Request, res: Response, next: () => void) => {
+  void next;
+  if (error instanceof MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      res.status(400).json({
+        success: false,
+        error: 'File exceeds the 20 MB limit.',
+      });
+      return;
+    }
+
+    if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+      res.status(400).json({
+        success: false,
+        error: 'Unexpected upload field. Use "file" and optional "reference".',
+      });
+      return;
+    }
+
+    res.status(400).json({
+      success: false,
+      error: 'Upload limit exceeded.',
+    });
+    return;
+  }
+
+  if (error instanceof UploadValidationError) {
+    res.status(400).json({
+      success: false,
+      error: error.message,
+    });
+    return;
+  }
+
+  if (error instanceof Error) {
+    res.status(500).json({
+      success: false,
+      error: 'Unexpected upload error.',
+    });
+    return;
+  }
+
+  res.status(500).json({
+    success: false,
+    error: 'Unexpected upload error.',
+  });
+});
+
+export { router as uploadRouter };

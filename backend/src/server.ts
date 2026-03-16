@@ -2,6 +2,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { type Request, type Response } from 'express';
 import { verifySupabaseJwt } from './middleware/auth.js';
+import { uploadRouter } from './routes/upload.js';
 
 dotenv.config();
 
@@ -15,7 +16,6 @@ app.use(
   }),
 );
 app.use(express.json());
-app.use('/api', verifySupabaseJwt);
 
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({
@@ -25,6 +25,9 @@ app.get('/api/health', (_req: Request, res: Response) => {
     },
   });
 });
+
+app.use('/api', verifySupabaseJwt);
+app.use('/api', uploadRouter);
 
 app.listen(port, () => {
   console.warn(`Backend listening on http://localhost:${port}`);
