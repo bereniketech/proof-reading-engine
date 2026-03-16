@@ -12,6 +12,16 @@ export interface ProofreadResult {
   change_summary: string;
 }
 
+interface LanguageToolResponse {
+  data: {
+    matches?: Array<{ offset: number; length: number; replacements: Array<{ value: string }> }>;
+  };
+}
+
+interface ProofreadOptions {
+  runCheck?: (params: URLSearchParams) => Promise<LanguageToolResponse>;
+}
+
 const LANGUAGETOOL_API_URL =
   process.env.LANGUAGETOOL_API_URL || 'https://api.languagetool.org/v2/check';
 const LANGUAGETOOL_TIMEOUT_MS = 15000;
@@ -41,20 +51,22 @@ function applyCorrections(
 }
 
 export async function proofreadSectionWithLanguageTool(
-  section: ProofreadSectionInput
+  section: ProofreadSectionInput,
+  options: ProofreadOptions = {},
 ): Promise<ProofreadResult> {
   const params = new URLSearchParams();
   params.append('text', section.originalText);
   params.append('language', 'en-US');
 
-  const response = await axios.post(
-    LANGUAGETOOL_API_URL,
-    params,
-    {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      timeout: LANGUAGETOOL_TIMEOUT_MS,
-    }
-  );
+  const runCheck =
+    options.runCheck ??
+    (async (payload: URLSearchParams): Promise<LanguageToolResponse> =>
+      axios.post(LANGUAGETOOL_API_URL, payload, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        timeout: LANGUAGETOOL_TIMEOUT_MS,
+      }));
+
+  const response = await runCheck(params);
 
   const matches = response.data.matches || [];
   const corrected = applyCorrections(section.originalText, matches);

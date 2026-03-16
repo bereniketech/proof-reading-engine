@@ -7,6 +7,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import multer, { MulterError } from 'multer';
 import { createUserScopedSupabaseClient } from '../lib/supabase.js';
 import { parseDocumentByType, type Section } from '../parsers/index.js';
+import { runProofreadingOrchestrator } from '../services/proofreader.js';
 
 interface AuthenticatedUser {
   id: string;
@@ -20,6 +21,8 @@ interface StoredUpload {
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const MAX_CONCURRENT_PARSE_JOBS = 4;
+const PROOFREAD_MAX_ATTEMPTS = 2;
+const PROOFREAD_RETRY_DELAY_MS = 1_000;
 const uploadDirectory = path.resolve('uploads');
 const allowedMimeTypes = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -249,6 +252,61 @@ function createReferenceTextByPosition(referenceSections: Section[]): Map<number
   return new Map(referenceSections.map((section) => [section.position, section.original_text]));
 }
 
+async function delay(milliseconds: number): Promise<void> {
+  await new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+async function triggerProofreadingWithRetry(input: { sessionId: string; accessToken: string }): Promise<void> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= PROOFREAD_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      await runProofreadingOrchestrator({
+        sessionId: input.sessionId,
+        accessToken: input.accessToken,
+      });
+      return;
+    } catch (error: unknown) {
+      lastError = error;
+
+      if (attempt < PROOFREAD_MAX_ATTEMPTS) {
+        console.warn('Retrying proofreading orchestrator after failure', {
+          sessionId: input.sessionId,
+          attempt,
+        });
+        await delay(PROOFREAD_RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  try {
+    const supabase = createUserScopedSupabaseClient(input.accessToken);
+    const { error } = await supabase
+      .from('sessions')
+      .update({ status: 'review' })
+      .eq('id', input.sessionId);
+
+    if (error) {
+      console.error('Failed to set terminal session status after proofreading retries exhausted', {
+        sessionId: input.sessionId,
+        error,
+      });
+    }
+  } catch (statusUpdateError: unknown) {
+    console.error('Unexpected error while setting terminal session status after proofreading retries exhausted', {
+      sessionId: input.sessionId,
+      error: statusUpdateError,
+    });
+  }
+
+  console.error('Proofreading orchestrator failed after retries', {
+    sessionId: input.sessionId,
+    error: lastError,
+  });
+}
+
 router.post('/upload', uploadFields, async (req: Request, res: Response) => {
   const authToken = getBearerToken(req.header('authorization'));
   const authenticatedUser = getAuthenticatedUser(res);
@@ -429,6 +487,11 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
       await cleanupUploadedFiles([mainFile, referenceFile]);
       releaseParseSlot();
     }
+
+    void triggerProofreadingWithRetry({
+      sessionId: data.id,
+      accessToken: authToken,
+    });
 
     res.status(201).json({
       sessionId: data.id,
