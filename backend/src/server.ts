@@ -1,6 +1,7 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { type Request, type Response } from 'express';
+import { verifySupabaseJwt } from './middleware/auth.js';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use('/api', verifySupabaseJwt);
 
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({

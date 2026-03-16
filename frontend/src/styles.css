@@ -46,3 +46,129 @@ p {
   margin: 0;
   line-height: 1.5;
 }
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.tab-button {
+  border: 1px solid #b8cff2;
+  border-radius: 0.6rem;
+  background: #f4f8ff;
+  color: #214c88;
+  font-weight: 600;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.tab-button.active {
+  background: #235ea8;
+  color: #ffffff;
+  border-color: #235ea8;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.auth-form h2 {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.field span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #214c88;
+}
+
+.field input {
+  width: 100%;
+  border: 1px solid #b8cff2;
+  border-radius: 0.6rem;
+  padding: 0.7rem 0.75rem;
+  font: inherit;
+}
+
+.field input:focus-visible {
+  outline: 2px solid #2f6ebe;
+  outline-offset: 1px;
+}
+
+.primary-button {
+  border: 0;
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, #235ea8, #1a4d8c);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.75rem 0.9rem;
+  cursor: pointer;
+}
+
+.primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-state {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.state-label {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #dbf1e6;
+  color: #1f6847;
+}
+
+.state-value {
+  font-weight: 600;
+}
+
+.feedback {
+  margin-top: 1rem;
+  border-radius: 0.6rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.feedback.error {
+  background: #ffe9ea;
+  color: #9a2130;
+  border: 1px solid #f4c3c9;
+}
+
+.feedback.info {
+  background: #e7f3ff;
+  color: #1a538f;
+  border: 1px solid #bfdcf8;
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding: 1rem;
+  }
+
+  .hero-card {
+    padding: 1.2rem;
+  }
+}
