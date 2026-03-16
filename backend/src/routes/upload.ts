@@ -6,6 +6,7 @@ import { Router } from 'express';
 import { fileTypeFromBuffer } from 'file-type';
 import multer, { MulterError } from 'multer';
 import { createUserScopedSupabaseClient } from '../lib/supabase.js';
+import { parseDocumentByType, type Section } from '../parsers/index.js';
 
 interface AuthenticatedUser {
   id: string;
@@ -17,7 +18,23 @@ interface StoredUpload {
   mimeType: string;
 }
 
+interface ParsedUploadArtifact {
+  sessionId: string;
+  uploadedAt: string;
+  file: {
+    originalName: string;
+    mimeType: string;
+  };
+  reference: {
+    originalName: string;
+    mimeType: string;
+  } | null;
+  sections: Section[];
+  referenceSections: Section[];
+}
+
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_CONCURRENT_PARSE_JOBS = 4;
 const uploadDirectory = path.resolve('uploads');
 const allowedMimeTypes = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -31,6 +48,20 @@ const mimeToFileType: Record<string, 'docx' | 'pdf' | 'txt'> = {
 };
 
 const router = Router();
+let activeParseJobs = 0;
+
+function tryAcquireParseSlot(): boolean {
+  if (activeParseJobs >= MAX_CONCURRENT_PARSE_JOBS) {
+    return false;
+  }
+
+  activeParseJobs += 1;
+  return true;
+}
+
+function releaseParseSlot(): void {
+  activeParseJobs = Math.max(activeParseJobs - 1, 0);
+}
 
 class UploadValidationError extends Error {
   constructor(message: string) {
@@ -81,7 +112,14 @@ async function cleanupUploadedFiles(files: Array<StoredUpload | null>): Promise<
     files
       .filter((file): file is StoredUpload => file !== null)
       .map(async (file) => {
-        await rm(file.path, { force: true });
+        try {
+          await rm(file.path, { force: true });
+        } catch (error) {
+          console.error('Failed to cleanup uploaded file', {
+            filePath: file.path,
+            error,
+          });
+        }
       }),
   );
 }
@@ -111,16 +149,47 @@ async function validateUploadedContent(file: StoredUpload, fileType: 'docx' | 'p
     return 'Unable to verify DOCX file signature.';
   }
 
-  const docxMimeTypes = new Set([
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/zip',
-  ]);
+  if (detected.mime !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    if (detected.mime !== 'application/zip') {
+      return 'Uploaded DOCX content does not match its declared type.';
+    }
 
-  if (!docxMimeTypes.has(detected.mime)) {
-    return 'Uploaded DOCX content does not match its declared type.';
+    try {
+      await parseDocumentByType(file.path, 'docx');
+    } catch {
+      return 'Uploaded DOCX content does not match its declared type.';
+    }
   }
 
   return null;
+}
+
+function createParseBusyErrorResponse(res: Response): void {
+  res.status(503).json({
+    success: false,
+    error: 'Upload queue is busy. Please retry in a moment.',
+  });
+}
+
+function createParseFailureResponse(res: Response): void {
+  res.status(400).json({
+    success: false,
+    error: 'Unable to parse uploaded document content.',
+  });
+}
+
+function createArtifactPersistenceFailureResponse(res: Response): void {
+  res.status(500).json({
+    success: false,
+    error: 'Failed to persist parsed upload artifact.',
+  });
+}
+
+function createUnexpectedUploadFailureResponse(res: Response): void {
+  res.status(500).json({
+    success: false,
+    error: 'Unexpected upload failure.',
+  });
 }
 
 const storage = multer.diskStorage({
@@ -226,7 +295,20 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
     return;
   }
 
-  const mainFileValidationError = await validateUploadedContent(mainFile, fileType);
+  let mainFileValidationError: string | null;
+  try {
+    mainFileValidationError = await validateUploadedContent(mainFile, fileType);
+  } catch (error) {
+    await cleanupUploadedFiles([mainFile, referenceFile]);
+    console.error('Failed while validating uploaded main file', {
+      mimeType: mainFile.mimeType,
+      fileType,
+      error,
+    });
+    createUnexpectedUploadFailureResponse(res);
+    return;
+  }
+
   if (mainFileValidationError) {
     await cleanupUploadedFiles([mainFile, referenceFile]);
     res.status(400).json({
@@ -247,7 +329,20 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
   }
 
   if (referenceFile && referenceFileType) {
-    const referenceValidationError = await validateUploadedContent(referenceFile, referenceFileType);
+    let referenceValidationError: string | null;
+    try {
+      referenceValidationError = await validateUploadedContent(referenceFile, referenceFileType);
+    } catch (error) {
+      await cleanupUploadedFiles([mainFile, referenceFile]);
+      console.error('Failed while validating reference file', {
+        mimeType: referenceFile.mimeType,
+        fileType: referenceFileType,
+        error,
+      });
+      createUnexpectedUploadFailureResponse(res);
+      return;
+    }
+
     if (referenceValidationError) {
       await cleanupUploadedFiles([mainFile, referenceFile]);
       res.status(400).json({
@@ -280,40 +375,79 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
       return;
     }
 
-    const uploadMetadata = {
-      sessionId: data.id,
-      uploadedAt: new Date().toISOString(),
-      file: mainFile,
-      reference: referenceFile,
-    };
-
-    try {
-      await writeFile(
-        path.join(uploadDirectory, `${data.id}.json`),
-        JSON.stringify(uploadMetadata, null, 2),
-        'utf8',
-      );
-    } catch {
+    if (!tryAcquireParseSlot()) {
       await supabase.from('sessions').delete().eq('id', data.id);
       await cleanupUploadedFiles([mainFile, referenceFile]);
-
-      res.status(500).json({
-        success: false,
-        error: 'Failed to store upload metadata.',
-      });
+      createParseBusyErrorResponse(res);
       return;
+    }
+
+    try {
+      const [sections, referenceSections] = await Promise.all([
+        parseDocumentByType(mainFile.path, fileType),
+        referenceFile && referenceFileType
+          ? parseDocumentByType(referenceFile.path, referenceFileType)
+          : Promise.resolve<Section[]>([]),
+      ]);
+
+      const uploadArtifact: ParsedUploadArtifact = {
+        sessionId: data.id,
+        uploadedAt: new Date().toISOString(),
+        file: {
+          originalName: mainFile.originalName,
+          mimeType: mainFile.mimeType,
+        },
+        reference: referenceFile
+          ? {
+              originalName: referenceFile.originalName,
+              mimeType: referenceFile.mimeType,
+            }
+          : null,
+        sections,
+        referenceSections,
+      };
+
+      try {
+        await writeFile(
+          path.join(uploadDirectory, `${data.id}.json`),
+          JSON.stringify(uploadArtifact, null, 2),
+          'utf8',
+        );
+      } catch (error) {
+        await supabase.from('sessions').delete().eq('id', data.id);
+        console.error('Failed to persist parsed upload artifact', {
+          sessionId: data.id,
+          error,
+        });
+        createArtifactPersistenceFailureResponse(res);
+        return;
+      }
+    } catch (error) {
+      await supabase.from('sessions').delete().eq('id', data.id);
+      console.error('Failed to parse uploaded document', {
+        sessionId: data.id,
+        fileType,
+        referenceFileType,
+        error,
+      });
+      createParseFailureResponse(res);
+      return;
+    } finally {
+      await cleanupUploadedFiles([mainFile, referenceFile]);
+      releaseParseSlot();
     }
 
     res.status(201).json({
       sessionId: data.id,
       status: data.status,
     });
-  } catch {
+  } catch (error) {
     await cleanupUploadedFiles([mainFile, referenceFile]);
-    res.status(500).json({
-      success: false,
-      error: 'Unexpected upload failure.',
+    console.error('Unexpected upload failure', {
+      userId: authenticatedUser.id,
+      error,
     });
+    createUnexpectedUploadFailureResponse(res);
   }
 });
 
