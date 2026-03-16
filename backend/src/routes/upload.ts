@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import type { Request, Response } from 'express';
 import { Router } from 'express';
@@ -16,21 +16,6 @@ interface StoredUpload {
   path: string;
   originalName: string;
   mimeType: string;
-}
-
-interface ParsedUploadArtifact {
-  sessionId: string;
-  uploadedAt: string;
-  file: {
-    originalName: string;
-    mimeType: string;
-  };
-  reference: {
-    originalName: string;
-    mimeType: string;
-  } | null;
-  sections: Section[];
-  referenceSections: Section[];
 }
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
@@ -178,10 +163,10 @@ function createParseFailureResponse(res: Response): void {
   });
 }
 
-function createArtifactPersistenceFailureResponse(res: Response): void {
+function createSectionPersistenceFailureResponse(res: Response): void {
   res.status(500).json({
     success: false,
-    error: 'Failed to persist parsed upload artifact.',
+    error: 'Failed to persist parsed sections and update session status.',
   });
 }
 
@@ -258,6 +243,10 @@ function asStoredUpload(file: Express.Multer.File | undefined): StoredUpload | n
     originalName: file.originalname,
     mimeType: file.mimetype,
   };
+}
+
+function createReferenceTextByPosition(referenceSections: Section[]): Map<number, string> {
+  return new Map(referenceSections.map((section) => [section.position, section.original_text]));
 }
 
 router.post('/upload', uploadFields, async (req: Request, res: Response) => {
@@ -383,54 +372,58 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
     }
 
     try {
-      const [sections, referenceSections] = await Promise.all([
-        parseDocumentByType(mainFile.path, fileType),
-        referenceFile && referenceFileType
-          ? parseDocumentByType(referenceFile.path, referenceFileType)
-          : Promise.resolve<Section[]>([]),
-      ]);
-
-      const uploadArtifact: ParsedUploadArtifact = {
-        sessionId: data.id,
-        uploadedAt: new Date().toISOString(),
-        file: {
-          originalName: mainFile.originalName,
-          mimeType: mainFile.mimeType,
-        },
-        reference: referenceFile
-          ? {
-              originalName: referenceFile.originalName,
-              mimeType: referenceFile.mimeType,
-            }
-          : null,
-        sections,
-        referenceSections,
-      };
+      let sections: Section[] = [];
+      let referenceSections: Section[] = [];
 
       try {
-        await writeFile(
-          path.join(uploadDirectory, `${data.id}.json`),
-          JSON.stringify(uploadArtifact, null, 2),
-          'utf8',
-        );
+        [sections, referenceSections] = await Promise.all([
+          parseDocumentByType(mainFile.path, fileType),
+          referenceFile && referenceFileType
+            ? parseDocumentByType(referenceFile.path, referenceFileType)
+            : Promise.resolve<Section[]>([]),
+        ]);
       } catch (error) {
         await supabase.from('sessions').delete().eq('id', data.id);
-        console.error('Failed to persist parsed upload artifact', {
+        console.error('Failed to parse uploaded document', {
           sessionId: data.id,
+          fileType,
+          referenceFileType,
           error,
         });
-        createArtifactPersistenceFailureResponse(res);
+        createParseFailureResponse(res);
+        return;
+      }
+
+      const referenceTextByPosition = createReferenceTextByPosition(referenceSections);
+      const sectionRows = sections.map((section) => ({
+        position: section.position,
+        section_type: section.section_type,
+        heading_level: section.heading_level,
+        original_text: section.original_text,
+        reference_text: referenceTextByPosition.get(section.position) ?? null,
+      }));
+
+      const { error: persistSectionsError } = await supabase.rpc('persist_session_sections', {
+        p_session_id: data.id,
+        p_sections: sectionRows,
+      });
+
+      if (persistSectionsError) {
+        await supabase.from('sessions').delete().eq('id', data.id);
+        console.error('Failed to persist parsed sections atomically', {
+          sessionId: data.id,
+          error: persistSectionsError,
+        });
+        createSectionPersistenceFailureResponse(res);
         return;
       }
     } catch (error) {
       await supabase.from('sessions').delete().eq('id', data.id);
-      console.error('Failed to parse uploaded document', {
+      console.error('Failed while persisting parsed sections', {
         sessionId: data.id,
-        fileType,
-        referenceFileType,
         error,
       });
-      createParseFailureResponse(res);
+      createSectionPersistenceFailureResponse(res);
       return;
     } finally {
       await cleanupUploadedFiles([mainFile, referenceFile]);
@@ -439,7 +432,7 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
 
     res.status(201).json({
       sessionId: data.id,
-      status: data.status,
+      status: 'proofreading',
     });
   } catch (error) {
     await cleanupUploadedFiles([mainFile, referenceFile]);
