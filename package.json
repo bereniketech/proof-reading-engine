@@ -1,0 +1,26 @@
+{
+  "name": "proof-reading-engine",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"bun run --cwd frontend dev\" \"bun run --cwd backend dev\"",
+    "typecheck": "bun run typecheck:frontend && bun run typecheck:backend",
+    "typecheck:frontend": "bun run --cwd frontend typecheck",
+    "typecheck:backend": "bun run --cwd backend typecheck",
+    "lint": "bun run lint:frontend && bun run lint:backend",
+    "lint:frontend": "bun run --cwd frontend lint",
+    "lint:backend": "bun run --cwd backend lint",
+    "lint:fix": "bun run lint:fix:frontend && bun run lint:fix:backend",
+    "lint:fix:frontend": "bun run --cwd frontend lint:fix",
+    "lint:fix:backend": "bun run --cwd backend lint:fix",
+    "format": "prettier --check .",
+    "format:write": "prettier --write ."
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.6.2"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules
+bun.lockb
+dist
+build
+coverage
+.tmp
+.claude
+.spec
