@@ -28,8 +28,9 @@ function getBearerToken(authorizationHeader: string | undefined): string | null 
   return token;
 }
 
-function setAuthenticatedUser(response: Response, user: AuthenticatedUser): void {
+function setAuthenticatedUser(response: Response, user: AuthenticatedUser, accessToken: string): void {
   response.locals.user = user;
+  response.locals.accessToken = accessToken;
 }
 
 function unauthorized(response: Response): void {
@@ -63,9 +64,12 @@ export async function verifySupabaseJwt(req: Request, res: Response, next: NextF
       email: typeof payload.email === 'string' ? payload.email : undefined,
     };
 
-    setAuthenticatedUser(res, authenticatedUser);
+    setAuthenticatedUser(res, authenticatedUser, token);
     next();
-  } catch {
+  } catch (error: unknown) {
+    console.error('JWT verification failed', {
+      error,
+    });
     unauthorized(res);
   }
 }
