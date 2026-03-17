@@ -146,8 +146,9 @@ _Skills:_ /api-design, /postgres-patterns
 ### T-11 Frontend — FileUpload Component
 Build the Home page with drag-and-drop file upload, reference file slot, and upload progress indicator.
 
-_Requirements:_ US-01, US-02
 _Skills:_ /build-website-web-app
+_Requirements:_ US-01, US-02
+
 
 **AC:**
 - Accepts drag-and-drop or click-to-browse for .docx, .pdf, .txt
@@ -161,8 +162,9 @@ _Skills:_ /build-website-web-app
 ### T-12 Frontend — Review Page Layout
 Build the Review page with sidebar section list and main content area.
 
-_Requirements:_ US-05
 _Skills:_ /build-website-web-app
+_Requirements:_ US-05
+
 
 **AC:**
 - Sidebar: scrollable list of sections showing `position`, `section_type`, and status badge
@@ -175,8 +177,9 @@ _Skills:_ /build-website-web-app
 ### T-13 Frontend — SectionCard Component
 Build the SectionCard showing original text, editable corrected text, optional reference text, diff view, and action buttons.
 
-_Requirements:_ US-05, US-06
 _Skills:_ /build-website-web-app
+_Requirements:_ US-05, US-06
+
 
 **AC:**
 - Displays `original_text` (read-only), `corrected_text` in editable textarea, `reference_text` (collapsible)

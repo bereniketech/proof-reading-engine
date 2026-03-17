@@ -129,6 +129,13 @@ p {
   align-items: start;
 }
 
+.auth-state.compact {
+  margin-top: 0;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .state-label {
   display: inline-flex;
   width: fit-content;
@@ -143,6 +150,107 @@ p {
 
 .state-value {
   font-weight: 600;
+}
+
+.upload-state {
+  margin-top: 1.15rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.dropzone {
+  border: 1px dashed #93b4e2;
+  border-radius: 0.8rem;
+  background: linear-gradient(170deg, #f8fbff, #eef5ff);
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.35rem;
+  cursor: pointer;
+  min-height: 142px;
+  align-content: start;
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+}
+
+.dropzone:hover,
+.dropzone:focus-within,
+.dropzone.active {
+  border-color: #2f6ebe;
+  background: linear-gradient(170deg, #f2f8ff, #e4efff);
+  box-shadow: 0 0 0 3px rgba(47, 110, 190, 0.15);
+}
+
+.dropzone input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dropzone-title {
+  font-weight: 700;
+  color: #1f4f8b;
+}
+
+.dropzone-copy {
+  font-size: 0.9rem;
+  color: #2f4f79;
+}
+
+.file-meta {
+  margin-top: auto;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #14365f;
+  background: rgba(176, 210, 249, 0.34);
+  border: 1px solid rgba(125, 174, 234, 0.56);
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.45rem;
+}
+
+.secondary-button {
+  border: 1px solid #8db1e4;
+  border-radius: 0.6rem;
+  background: #edf5ff;
+  color: #214c88;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.48rem 0.75rem;
+  cursor: pointer;
+}
+
+.secondary-button:hover {
+  background: #e3efff;
+}
+
+.progress-block {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.progress-track {
+  width: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+  height: 0.66rem;
+  background: #dceafe;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #235ea8, #4f88cc);
+  transition: width 120ms linear;
+}
+
+.progress-label {
+  font-size: 0.86rem;
+  color: #24518f;
 }
 
 .feedback {
@@ -170,5 +278,14 @@ p {
 
   .hero-card {
     padding: 1.2rem;
+  }
+
+  .upload-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-state.compact {
+    grid-template-columns: 1fr;
+    justify-items: start;
   }
 }

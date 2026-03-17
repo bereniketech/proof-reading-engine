@@ -9,3 +9,9 @@
 - **Root cause:** `sections` upsert and `sessions.status` update were executed as independent statements in the upload route.
 - **Fix applied:** Added `persist_session_sections` SQL function and migrated upload persistence to a single RPC call so section upsert and session status update are atomic.
 - **Affected file(s):** backend/src/routes/upload.ts, backend/src/db/migrations/002_persist_session_sections.sql
+
+## [2026-03-17] Stale file selection after failed replacement
+- **What broke:** Replacing a previously valid upload with an invalid file kept the old file selected, so upload could submit unintended content.
+- **Root cause:** Client-side validation rejected new files without clearing the existing file state for that upload slot.
+- **Fix applied:** Cleared the target file state on validation failure and added assertive live-region error announcements for dynamic upload/auth errors.
+- **Affected file(s):** frontend/src/App.tsx
