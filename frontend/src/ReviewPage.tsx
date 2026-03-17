@@ -54,6 +54,11 @@ interface SectionPatchSuccessResponse {
 
 type SectionPatchResponse = SectionPatchSuccessResponse | ApiErrorResponse;
 
+interface ExportErrorResponse {
+  success?: false;
+  error?: string;
+}
+
 const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
 const POLL_INTERVAL_MS = 2000;
 
@@ -88,6 +93,8 @@ export default function ReviewPage() {
   const [dirtySectionIds, setDirtySectionIds] = useState<Record<string, boolean>>({});
   const [savingSectionId, setSavingSectionId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -334,6 +341,65 @@ export default function ReviewPage() {
     }
   };
 
+  const handleExportPdf = async (): Promise<void> => {
+    if (!supabaseSession) {
+      setExportError('You are not authenticated.');
+      return;
+    }
+
+    if (!sessionId) {
+      setExportError('No session ID found in URL.');
+      return;
+    }
+
+    setIsExporting(true);
+    setExportError(null);
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/export/${encodeURIComponent(sessionId)}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${supabaseSession.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to export PDF.';
+        const contentType = response.headers.get('content-type') ?? '';
+
+        if (contentType.includes('application/json')) {
+          const body = (await response.json()) as ExportErrorResponse;
+          if (typeof body.error === 'string' && body.error.length > 0) {
+            errorMessage = body.error;
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+
+      const disposition = response.headers.get('content-disposition') ?? '';
+      const fileNameMatch = disposition.match(/filename="?([^";]+)"?/i);
+      const fileName = fileNameMatch?.[1] ?? `proofread-${sessionId}.pdf`;
+
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (exportErr) {
+      setExportError(
+        exportErr instanceof Error ? exportErr.message : 'Failed to export PDF. Please try again.',
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const activeSection = payload?.sections.find((s) => s.id === activeSectionId) ?? null;
 
   if (isLoading) {
@@ -367,6 +433,7 @@ export default function ReviewPage() {
 
   const pendingCount = payload.sections.filter((s) => s.status === 'pending').length;
   const isProofreading = pendingCount > 0;
+  const canExportPdf = payload.sections.length > 0 && pendingCount === 0;
 
   return (
     <div className="review-shell">
@@ -385,6 +452,23 @@ export default function ReviewPage() {
           )}
           <button
             type="button"
+            className="primary-button review-export-button"
+            disabled={!canExportPdf || isExporting}
+            onClick={() => {
+              void handleExportPdf();
+            }}
+          >
+            {isExporting ? (
+              <>
+                <span className="button-spinner" aria-hidden="true" />
+                Exporting PDF...
+              </>
+            ) : (
+              'Download PDF'
+            )}
+          </button>
+          <button
+            type="button"
             className="secondary-button"
             onClick={() => window.location.assign('/')}
           >
@@ -392,6 +476,12 @@ export default function ReviewPage() {
           </button>
         </div>
       </header>
+
+      {exportError ? (
+        <p className="review-export-error" role="alert">
+          {exportError}
+        </p>
+      ) : null}
 
       <div className="review-body">
         <aside className="review-sidebar" aria-label="Document sections">

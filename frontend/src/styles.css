@@ -356,6 +356,38 @@ p {
   flex-shrink: 0;
 }
 
+.review-export-button {
+  min-width: 9.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.button-spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  animation: button-spin 750ms linear infinite;
+}
+
+@keyframes button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.review-export-error {
+  margin: 0;
+  padding: 0.45rem 1.25rem;
+  border-bottom: 1px solid #f4c3c9;
+  background: #ffe9ea;
+  color: #9a2130;
+  font-size: 0.9rem;
+}
+
 .review-status-pill {
   display: inline-flex;
   border-radius: 999px;
@@ -646,6 +678,10 @@ p {
 
   .review-header-right {
     flex-wrap: wrap;
+  }
+
+  .review-export-button {
+    min-width: 0;
   }
 
   .mobile-section-picker {

@@ -206,7 +206,7 @@ _Requirements:_ US-07
 
 ---
 
-### T-15 Frontend — Export Button & Download
+### T-15 Frontend — Export Button & Download [DONE 2026-03-17]
 Add "Download PDF" button to Review page that calls the export endpoint and triggers browser download.
 
 _Skills:_ /build-website-web-app
@@ -223,8 +223,9 @@ _Requirements:_ US-07
 ### T-16 E2E Tests
 Write Playwright tests covering the full happy path: upload → proofread → review → export.
 
-_Requirements:_ All US
 _Skills:_ /e2e-testing
+_Requirements:_ All US
+
 
 **AC:**
 - Test: upload a sample .docx file, wait for all sections to be ready
