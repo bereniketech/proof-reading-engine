@@ -55,11 +55,14 @@ function buildDiffChunks(originalText: string, editedText: string): DiffChunk[] 
   );
 
   for (let i = 1; i <= originalTokens.length; i += 1) {
+    const currentRow = lcs[i]!;
+    const previousRow = lcs[i - 1]!;
+
     for (let j = 1; j <= editedTokens.length; j += 1) {
       if (originalTokens[i - 1] === editedTokens[j - 1]) {
-        lcs[i][j] = lcs[i - 1][j - 1] + 1;
+        currentRow[j] = previousRow[j - 1]! + 1;
       } else {
-        lcs[i][j] = Math.max(lcs[i - 1][j], lcs[i][j - 1]);
+        currentRow[j] = Math.max(previousRow[j]!, currentRow[j - 1]!);
       }
     }
   }
@@ -69,28 +72,31 @@ function buildDiffChunks(originalText: string, editedText: string): DiffChunk[] 
   let editedCursor = editedTokens.length;
 
   while (originalCursor > 0 || editedCursor > 0) {
+    const originalToken = originalCursor > 0 ? originalTokens[originalCursor - 1]! : null;
+    const editedToken = editedCursor > 0 ? editedTokens[editedCursor - 1]! : null;
+
     if (
-      originalCursor > 0 &&
-      editedCursor > 0 &&
-      originalTokens[originalCursor - 1] === editedTokens[editedCursor - 1]
+      originalToken !== null &&
+      editedToken !== null &&
+      originalToken === editedToken
     ) {
-      reversed.push({ type: 'same', value: originalTokens[originalCursor - 1] });
+      reversed.push({ type: 'same', value: originalToken });
       originalCursor -= 1;
       editedCursor -= 1;
       continue;
     }
 
     if (
-      editedCursor > 0 &&
-      (originalCursor === 0 || lcs[originalCursor][editedCursor - 1] >= lcs[originalCursor - 1][editedCursor])
+      editedToken !== null &&
+      (originalToken === null || (lcs[originalCursor]?.[editedCursor - 1] ?? 0) >= (lcs[originalCursor - 1]?.[editedCursor] ?? 0))
     ) {
-      reversed.push({ type: 'added', value: editedTokens[editedCursor - 1] });
+      reversed.push({ type: 'added', value: editedToken });
       editedCursor -= 1;
       continue;
     }
 
-    if (originalCursor > 0) {
-      reversed.push({ type: 'removed', value: originalTokens[originalCursor - 1] });
+    if (originalToken !== null) {
+      reversed.push({ type: 'removed', value: originalToken });
       originalCursor -= 1;
     }
   }

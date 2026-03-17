@@ -19,14 +19,17 @@
 ## [2026-03-17] Review editor state and mobile navigation regressions
 - **What broke:** Review edits could stay stale after pending sections became ready, and section navigation was unavailable on mobile after hiding the sidebar.
 - **Root cause:** React state dependency array incomplete in useEffect, and mobile sidebar controlled without outlet state sync.
-- **Fix applied:** Corrected useEffect dependency arrays and added explicit outlet re-render on sidebar toggle for mobile UX.
-- **Affected file(s):** frontend/src/ReviewPage.tsx
+- **Fix applied:** Corrected useEffect dependency arrays, added dirty-aware draft synchronization from server values, introduced a mobile section select control, improved accessibility labeling for corrected-text textarea, and replaced listbox-like sidebar markup with semantic buttons.
+- **Affected file(s):** frontend/src/ReviewPage.tsx, frontend/src/components/SectionCard.tsx, frontend/src/styles.css
 
 ## [2026-03-17] PDF export heading text rendering
 - **What broke:** Export endpoint heading text was rendered as heading level numbers instead of actual section text.
 - **Root cause:** PDF generation logic was setting heading content to heading_level.toString() instead of using the textToUse variable.
 - **Fix applied:** Corrected content array population to use textToUse for all section types and fix text reference in PDF drawing loop.
 - **Affected file(s):** backend/src/services/export.ts
-- **Root cause:** Edited text cache initialized only once per section without server resync, and responsive CSS removed the only section picker.
-- **Fix applied:** Added dirty-aware draft synchronization from server values, introduced a mobile section select control, improved accessibility labeling for corrected-text textarea, and replaced listbox-like sidebar markup with semantic buttons.
-- **Affected file(s):** frontend/src/ReviewPage.tsx, frontend/src/components/SectionCard.tsx, frontend/src/styles.css
+
+## [2026-03-17] Frontend strict TypeScript build regression
+- **What broke:** Frontend production builds failed on Vercel because strict array indexing in the inline diff builder was not narrowed for `noUncheckedIndexedAccess`, and the frontend package did not declare Node type definitions required by `tsconfig.node.json`.
+- **Root cause:** The SectionCard LCS diff logic relied on bounds that TypeScript could not prove under strict indexed access, and `@types/node` was missing from frontend devDependencies.
+- **Fix applied:** Added explicit guarded token reads and row access in the diff builder so matrix and token indexing remains type-safe without changing behavior, and added `@types/node` to the frontend devDependencies.
+- **Affected file(s):** frontend/src/components/SectionCard.tsx, frontend/package.json
