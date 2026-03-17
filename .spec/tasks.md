@@ -174,7 +174,7 @@ _Requirements:_ US-05
 
 ---
 
-### T-13 Frontend — SectionCard Component
+### T-13 Frontend — SectionCard Component [DONE 2026-03-17]
 Build the SectionCard showing original text, editable corrected text, optional reference text, diff view, and action buttons.
 
 _Skills:_ /build-website-web-app
@@ -193,8 +193,9 @@ _Requirements:_ US-05, US-06
 ### T-14 PDF Export Endpoint
 Implement `POST /api/export/:sessionId` using pdf-lib to compile and stream the final PDF.
 
-_Requirements:_ US-07
 _Skills:_ /code-writing-software-development
+_Requirements:_ US-07
+
 
 **AC:**
 - Returns 400 if any section is still `pending`

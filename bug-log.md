@@ -15,3 +15,9 @@
 - **Root cause:** Client-side validation rejected new files without clearing the existing file state for that upload slot.
 - **Fix applied:** Cleared the target file state on validation failure and added assertive live-region error announcements for dynamic upload/auth errors.
 - **Affected file(s):** frontend/src/App.tsx
+
+## [2026-03-17] Review editor state and mobile navigation regressions
+- **What broke:** Review edits could stay stale after pending sections became ready, and section navigation was unavailable on mobile after hiding the sidebar.
+- **Root cause:** Edited text cache initialized only once per section without server resync, and responsive CSS removed the only section picker.
+- **Fix applied:** Added dirty-aware draft synchronization from server values, introduced a mobile section select control, improved accessibility labeling for corrected-text textarea, and replaced listbox-like sidebar markup with semantic buttons.
+- **Affected file(s):** frontend/src/ReviewPage.tsx, frontend/src/components/SectionCard.tsx, frontend/src/styles.css

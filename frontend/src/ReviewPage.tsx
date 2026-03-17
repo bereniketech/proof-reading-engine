@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Session as SupabaseSession } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
+import { SectionCard } from './components/SectionCard';
 
 type SectionStatus = 'pending' | 'ready' | 'accepted' | 'rejected';
 
@@ -46,6 +47,13 @@ interface ApiErrorResponse {
 
 type ApiResponse = ApiSuccessResponse | ApiErrorResponse;
 
+interface SectionPatchSuccessResponse {
+  success: true;
+  data: SectionRecord;
+}
+
+type SectionPatchResponse = SectionPatchSuccessResponse | ApiErrorResponse;
+
 const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined) ?? 'http://localhost:3001';
 const POLL_INTERVAL_MS = 2000;
 
@@ -76,6 +84,10 @@ export default function ReviewPage() {
   const [supabaseSession, setSupabaseSession] = useState<SupabaseSession | null>(null);
   const [payload, setPayload] = useState<SessionPayload | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const [editedTextBySectionId, setEditedTextBySectionId] = useState<Record<string, string>>({});
+  const [dirtySectionIds, setDirtySectionIds] = useState<Record<string, boolean>>({});
+  const [savingSectionId, setSavingSectionId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -185,6 +197,143 @@ export default function ReviewPage() {
     };
   }, [supabaseSession, sessionId]);
 
+  useEffect(() => {
+    if (!payload) {
+      return;
+    }
+
+    setEditedTextBySectionId((previous) => {
+      let didChange = false;
+      const next: Record<string, string> = { ...previous };
+
+      for (const section of payload.sections) {
+        const serverText = section.final_text ?? section.corrected_text ?? '';
+
+        if (!Object.hasOwn(next, section.id)) {
+          next[section.id] = serverText;
+          didChange = true;
+          continue;
+        }
+
+        if (!dirtySectionIds[section.id] && next[section.id] !== serverText) {
+          next[section.id] = serverText;
+          didChange = true;
+        }
+      }
+
+      return didChange ? next : previous;
+    });
+  }, [dirtySectionIds, payload]);
+
+  const patchSection = async (
+    sectionId: string,
+    updates: { status?: SectionStatus; final_text?: string },
+  ): Promise<SectionRecord> => {
+    if (!supabaseSession) {
+      throw new Error('You are not authenticated.');
+    }
+
+    const response = await fetch(`${apiBaseUrl}/api/sections/${encodeURIComponent(sectionId)}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${supabaseSession.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+
+    const body = (await response.json()) as SectionPatchResponse;
+    if (!response.ok || !body.success) {
+      throw new Error((body as ApiErrorResponse).error ?? 'Failed to update section.');
+    }
+
+    return (body as SectionPatchSuccessResponse).data;
+  };
+
+  const getEditedText = (section: SectionRecord): string => {
+    return editedTextBySectionId[section.id] ?? section.final_text ?? section.corrected_text ?? '';
+  };
+
+  const updateSectionInPayload = (nextSection: SectionRecord): void => {
+    setPayload((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        sections: current.sections.map((section) =>
+          section.id === nextSection.id ? nextSection : section,
+        ),
+      };
+    });
+  };
+
+  const handleAccept = async (): Promise<void> => {
+    if (!payload || !activeSection) {
+      return;
+    }
+
+    setActionError(null);
+    setSavingSectionId(activeSection.id);
+
+    const previousSection = activeSection;
+    const editedText = getEditedText(activeSection);
+    const optimisticSection: SectionRecord = {
+      ...activeSection,
+      status: 'accepted',
+      final_text: editedText,
+    };
+
+    updateSectionInPayload(optimisticSection);
+
+    try {
+      const updated = await patchSection(activeSection.id, {
+        status: 'accepted',
+        final_text: editedText,
+      });
+      updateSectionInPayload(updated);
+    } catch (patchError) {
+      updateSectionInPayload(previousSection);
+      setActionError(
+        patchError instanceof Error ? patchError.message : 'Failed to accept section. Please retry.',
+      );
+    } finally {
+      setSavingSectionId(null);
+    }
+  };
+
+  const handleReject = async (): Promise<void> => {
+    if (!payload || !activeSection) {
+      return;
+    }
+
+    setActionError(null);
+    setSavingSectionId(activeSection.id);
+
+    const previousSection = activeSection;
+    const optimisticSection: SectionRecord = {
+      ...activeSection,
+      status: 'rejected',
+    };
+
+    updateSectionInPayload(optimisticSection);
+
+    try {
+      const updated = await patchSection(activeSection.id, {
+        status: 'rejected',
+      });
+      updateSectionInPayload(updated);
+    } catch (patchError) {
+      updateSectionInPayload(previousSection);
+      setActionError(
+        patchError instanceof Error ? patchError.message : 'Failed to reject section. Please retry.',
+      );
+    } finally {
+      setSavingSectionId(null);
+    }
+  };
+
   const activeSection = payload?.sections.find((s) => s.id === activeSectionId) ?? null;
 
   if (isLoading) {
@@ -246,75 +395,63 @@ export default function ReviewPage() {
 
       <div className="review-body">
         <aside className="review-sidebar" aria-label="Document sections">
-          <ul className="section-list" role="listbox" aria-label="Section list">
+          <ul className="section-list" aria-label="Section list">
             {payload.sections.map((section) => (
-              <li
-                key={section.id}
-                role="option"
-                aria-selected={section.id === activeSectionId}
-                className={`section-item${section.id === activeSectionId ? ' section-item--active' : ''}`}
-                onClick={() => setActiveSectionId(section.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setActiveSectionId(section.id);
-                  }
-                }}
-                tabIndex={0}
-              >
-                <span className="section-item-position">#{section.position + 1}</span>
-                <span className="section-item-type">{section.section_type}</span>
-                <StatusBadge status={section.status} />
+              <li key={section.id}>
+                <button
+                  type="button"
+                  className={`section-item${section.id === activeSectionId ? ' section-item--active' : ''}`}
+                  aria-current={section.id === activeSectionId ? 'true' : undefined}
+                  onClick={() => setActiveSectionId(section.id)}
+                >
+                  <span className="section-item-position">#{section.position + 1}</span>
+                  <span className="section-item-type">{section.section_type}</span>
+                  <StatusBadge status={section.status} />
+                </button>
               </li>
             ))}
           </ul>
         </aside>
 
         <main className="review-main">
+          <div className="mobile-section-picker">
+            <label htmlFor="mobile-section-select" className="section-block-label">
+              Section
+            </label>
+            <select
+              id="mobile-section-select"
+              className="mobile-section-select"
+              value={activeSectionId ?? ''}
+              onChange={(event) => setActiveSectionId(event.target.value)}
+            >
+              {payload.sections.map((section) => (
+                <option key={section.id} value={section.id}>
+                  #{section.position + 1} {section.section_type} ({STATUS_LABELS[section.status]})
+                </option>
+              ))}
+            </select>
+          </div>
+
           {activeSection !== null ? (
-            <div className="section-detail">
-              <div className="section-detail-meta">
-                <span className="section-detail-pos">Section #{activeSection.position + 1}</span>
-                <span className="section-detail-type">{activeSection.section_type}</span>
-                <StatusBadge status={activeSection.status} />
-              </div>
-
-              <div className="section-block">
-                <h2 className="section-block-label">Original text</h2>
-                <p className="section-block-content section-block-content--original">
-                  {activeSection.original_text}
-                </p>
-              </div>
-
-              {activeSection.corrected_text !== null ? (
-                <div className="section-block">
-                  <h2 className="section-block-label">Corrected text</h2>
-                  <p className="section-block-content">{activeSection.corrected_text}</p>
-                </div>
-              ) : (
-                <div className="section-block section-block--pending">
-                  <p className="section-pending-message">Proofreading in progress…</p>
-                </div>
-              )}
-
-              {activeSection.change_summary !== null && activeSection.change_summary.length > 0 ? (
-                <div className="section-block">
-                  <h2 className="section-block-label">Summary of changes</h2>
-                  <p className="section-block-content section-block-content--summary">
-                    {activeSection.change_summary}
-                  </p>
-                </div>
-              ) : null}
-
-              {activeSection.reference_text !== null && activeSection.reference_text.length > 0 ? (
-                <details className="section-reference">
-                  <summary className="section-reference-toggle">Reference text</summary>
-                  <p className="section-block-content section-block-content--reference">
-                    {activeSection.reference_text}
-                  </p>
-                </details>
-              ) : null}
-            </div>
+            <SectionCard
+              section={activeSection}
+              editedText={getEditedText(activeSection)}
+              isSaving={savingSectionId === activeSection.id}
+              actionError={actionError}
+              onEditedTextChange={(nextValue) => {
+                setEditedTextBySectionId((current) => ({
+                  ...current,
+                  [activeSection.id]: nextValue,
+                }));
+                setDirtySectionIds((current) => ({
+                  ...current,
+                  [activeSection.id]: true,
+                }));
+                setActionError(null);
+              }}
+              onAccept={handleAccept}
+              onReject={handleReject}
+            />
           ) : (
             <div className="section-empty">
               <p>Select a section from the sidebar to review it.</p>
