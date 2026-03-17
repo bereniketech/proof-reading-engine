@@ -1,12 +1,12 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { type Request, type Response } from 'express';
+dotenv.config();
+
 import { verifySupabaseJwt } from './middleware/auth.js';
 import { exportRouter } from './routes/export.js';
 import { sectionsRouter } from './routes/sections.js';
 import { uploadRouter } from './routes/upload.js';
-
-dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT ?? 3001);

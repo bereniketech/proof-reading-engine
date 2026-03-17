@@ -18,7 +18,14 @@ const uuidV4LikePattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const router = Router();
-const adminClient = createAdminSupabaseClient();
+let adminClient: any;
+
+function getAdminClient(): any {
+  if (!adminClient) {
+    adminClient = createAdminSupabaseClient();
+  }
+  return adminClient;
+}
 
 function isUuid(value: string): boolean {
   return uuidV4LikePattern.test(value);
@@ -115,7 +122,8 @@ function parseUpdateSectionBody(body: unknown): UpdateSectionBody | null {
 }
 
 async function getSessionOwnerId(sessionId: string): Promise<string | null> {
-  const { data, error } = await adminClient.from('sessions').select('user_id').eq('id', sessionId).maybeSingle();
+  const client = getAdminClient();
+  const { data, error } = await client.from('sessions').select('user_id').eq('id', sessionId).maybeSingle();
 
   if (error || !data || typeof data.user_id !== 'string') {
     return null;
@@ -125,7 +133,8 @@ async function getSessionOwnerId(sessionId: string): Promise<string | null> {
 }
 
 async function getSectionOwnerId(sectionId: string): Promise<string | null> {
-  const { data, error } = await adminClient
+  const client = getAdminClient();
+  const { data, error } = await client
     .from('sections')
     .select('session:sessions!inner(user_id)')
     .eq('id', sectionId)

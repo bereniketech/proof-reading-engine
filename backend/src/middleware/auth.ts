@@ -6,14 +6,21 @@ interface AuthenticatedUser {
   email?: string;
 }
 
-const supabaseUrl = process.env.SUPABASE_URL;
+// Lazy initialization to avoid requiring env vars at module load time
+let supabaseUrl: string | undefined;
+let issuer: string | undefined;
+let jwks: any;
 
-if (!supabaseUrl) {
-  throw new Error('SUPABASE_URL is required for JWT verification middleware.');
+function initializeAuth(): void {
+  if (!supabaseUrl) {
+    supabaseUrl = process.env.SUPABASE_URL;
+    if (!supabaseUrl) {
+      throw new Error('SUPABASE_URL is required for JWT verification middleware.');
+    }
+    issuer = `${supabaseUrl.replace(/\/$/, '')}/auth/v1`;
+    jwks = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`));
+  }
 }
-
-const issuer = `${supabaseUrl.replace(/\/$/, '')}/auth/v1`;
-const jwks = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`));
 
 function getBearerToken(authorizationHeader: string | undefined): string | null {
   if (!authorizationHeader) {
@@ -41,6 +48,9 @@ function unauthorized(response: Response): void {
 }
 
 export async function verifySupabaseJwt(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Initialize on first request
+  initializeAuth();
+
   const token = getBearerToken(req.header('authorization'));
 
   if (!token) {
@@ -68,7 +78,7 @@ export async function verifySupabaseJwt(req: Request, res: Response, next: NextF
     next();
   } catch (error: unknown) {
     console.error('JWT verification failed', {
-      error,
+      code: error instanceof Error ? error.message : 'unknown',
     });
     unauthorized(res);
   }
