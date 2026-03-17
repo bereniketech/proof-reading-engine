@@ -4,7 +4,7 @@
 
 ---
 
-### T-01 Project Scaffolding
+### T-01 Project Scaffolding [DONE 2026-03-16]
 Set up bun monorepo with `frontend/` (Vite + React + TypeScript) and `backend/` (Express + TypeScript) workspaces.
 
 _Requirements:_ US-01, US-08
@@ -18,7 +18,7 @@ _Skills:_ /code-writing-software-development, /build-website-web-app
 
 ---
 
-### T-02 Supabase Schema & RLS
+### T-02 Supabase Schema & RLS [DONE 2026-03-16]
 Create and apply the `sessions` and `sections` tables with indexes and RLS policies.
 
 _Requirements:_ US-08, US-09
@@ -32,7 +32,7 @@ _Skills:_ /postgres-patterns, /database-migrations
 
 ---
 
-### T-03 Auth Integration
+### T-03 Auth Integration [DONE 2026-03-16]
 Implement Supabase Auth on frontend (sign-up, login, logout) and JWT verification middleware on backend.
 
 _Requirements:_ US-08
@@ -46,7 +46,7 @@ _Skills:_ /build-website-web-app, /security-review
 
 ---
 
-### T-04 File Upload Endpoint
+### T-04 File Upload Endpoint [DONE 2026-03-16]
 Implement `POST /api/upload` with multer, MIME validation, and Supabase session creation.
 
 _Requirements:_ US-01, US-02
@@ -60,7 +60,7 @@ _Skills:_ /api-design, /security-review
 
 ---
 
-### T-05 File Parsers
+### T-05 File Parsers [DONE 2026-03-16]
 Implement DOCX, PDF, and TXT parsers that return a typed `Section[]` array.
 
 _Requirements:_ US-03
@@ -75,7 +75,7 @@ _Skills:_ /code-writing-software-development, /nutrient-document-processing
 
 ---
 
-### T-06 Section Storage
+### T-06 Section Storage [DONE 2026-03-16]
 After parsing, insert all sections into the `sections` table and update session status to `proofreading`.
 
 _Requirements:_ US-03, US-04
@@ -88,7 +88,7 @@ _Skills:_ /postgres-patterns
 
 ---
 
-### T-07 Proofreading Service — OpenAI
+### T-07 Proofreading Service — OpenAI [DONE 2026-03-16]
 Implement `backend/src/services/openai.ts` that sends each section to GPT-4o and returns `{ corrected_text, change_summary }`.
 
 _Requirements:_ US-04
@@ -102,7 +102,7 @@ _Skills:_ /code-writing-software-development, /security-review
 
 ---
 
-### T-08 Proofreading Service — LanguageTool Fallback
+### T-08 Proofreading Service — LanguageTool Fallback [DONE 2026-03-16]
 Implement `backend/src/services/languagetool.ts` as a fallback when OpenAI fails.
 
 _Requirements:_ US-04
@@ -115,7 +115,7 @@ _Skills:_ /code-writing-software-development
 
 ---
 
-### T-09 Proofreading Orchestrator
+### T-09 Proofreading Orchestrator [DONE 2026-03-16]
 Implement the async orchestrator that runs up to 5 parallel GPT-4o calls per session, writes results to DB, and updates session status.
 
 _Requirements:_ US-04
@@ -129,7 +129,7 @@ _Skills:_ /autonomous-agents-task-automation, /postgres-patterns
 
 ---
 
-### T-10 Sections API
+### T-10 Sections API [DONE 2026-03-16]
 Implement `GET /api/sessions/:id`, `GET /api/sections/:id`, and `PATCH /api/sections/:id`.
 
 _Requirements:_ US-05, US-06, US-09
@@ -143,7 +143,7 @@ _Skills:_ /api-design, /postgres-patterns
 
 ---
 
-### T-11 Frontend — FileUpload Component
+### T-11 Frontend — FileUpload Component [DONE 2026-03-17]
 Build the Home page with drag-and-drop file upload, reference file slot, and upload progress indicator.
 
 _Skills:_ /build-website-web-app
@@ -159,7 +159,7 @@ _Requirements:_ US-01, US-02
 
 ---
 
-### T-12 Frontend — Review Page Layout
+### T-12 Frontend — Review Page Layout [DONE 2026-03-17]
 Build the Review page with sidebar section list and main content area.
 
 _Skills:_ /build-website-web-app
@@ -190,7 +190,7 @@ _Requirements:_ US-05, US-06
 
 ---
 
-### T-14 PDF Export Endpoint
+### T-14 PDF Export Endpoint [DONE 2026-03-17]
 Implement `POST /api/export/:sessionId` using pdf-lib to compile and stream the final PDF.
 
 _Skills:_ /code-writing-software-development
@@ -209,8 +209,9 @@ _Requirements:_ US-07
 ### T-15 Frontend — Export Button & Download
 Add "Download PDF" button to Review page that calls the export endpoint and triggers browser download.
 
-_Requirements:_ US-07
 _Skills:_ /build-website-web-app
+
+_Requirements:_ US-07
 
 **AC:**
 - Button disabled until all sections are non-pending

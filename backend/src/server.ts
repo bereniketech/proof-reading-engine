@@ -2,6 +2,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { type Request, type Response } from 'express';
 import { verifySupabaseJwt } from './middleware/auth.js';
+import { exportRouter } from './routes/export.js';
 import { sectionsRouter } from './routes/sections.js';
 import { uploadRouter } from './routes/upload.js';
 
@@ -28,6 +29,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 app.use('/api', verifySupabaseJwt);
+app.use('/api', exportRouter);
 app.use('/api', uploadRouter);
 app.use('/api', sectionsRouter);
 
