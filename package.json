@@ -17,10 +17,13 @@
     "lint:fix:frontend": "bun run --cwd frontend lint:fix",
     "lint:fix:backend": "bun run --cwd backend lint:fix",
     "format": "prettier --check .",
-    "format:write": "prettier --write ."
+    "format:write": "prettier --write .",
+    "test:e2e": "dotenv -e .env -- playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "concurrently": "^9.1.2",
+    "dotenv-cli": "^11.0.0",
     "prettier": "^3.6.2"
   },
   "dependencies": {

@@ -212,7 +212,7 @@ Add "Download PDF" button to Review page that calls the export endpoint and trig
 _Skills:_ /build-website-web-app
 
 _Requirements:_ US-07
-
+~
 **AC:**
 - Button disabled until all sections are non-pending
 - On click: POST to `/api/export/:sessionId`, receive blob, trigger download
