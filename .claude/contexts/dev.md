@@ -3,6 +3,11 @@
 Mode: Active development
 Focus: Implementation, coding, building features
 
+## Project Architecture (WAT Framework)
+Layer 1 Workflows: `workflows/` — SOPs defining objectives, inputs, tools, outputs.
+Layer 2 Agent (you): read workflows, call tools in sequence, recover from errors.
+Layer 3 Tools: `tools/` — deterministic scripts. Secrets in `.env` only.
+
 ## Behavior
 - Write code first, explain after
 - Prefer working solutions over perfect solutions

@@ -239,8 +239,9 @@ _Requirements:_ All US
 ### T-17 Security Hardening
 Run /security-review across all auth, upload, and API surfaces.
 
-_Requirements:_ US-08
 _Skills:_ /security-review
+_Requirements:_ US-08
+
 
 **AC:**
 - OWASP checklist completed for: file upload (path traversal, MIME bypass), JWT (expiry, sig validation), API (IDOR, RLS), env secrets
@@ -253,8 +254,8 @@ _Skills:_ /security-review
 ### T-18 Deployment
 Deploy frontend to Vercel and backend to Render; configure env vars on both platforms.
 
-_Requirements:_ All
 _Skills:_ /terminal-cli-devops, /code-writing-software-development
+_Requirements:_ All
 
 **AC:**
 - `vercel deploy` succeeds; frontend live at Vercel URL

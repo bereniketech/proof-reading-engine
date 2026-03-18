@@ -14,22 +14,24 @@ Read `.claude/project-config.md` for deployment targets, hosting, GitHub setting
 Use this config when executing deployment, CI/CD, or hosting-related tasks.
 
 ## Skills
-Skill files are in `.claude/skills/[skill-name]/SKILL.md`. Load with `/[skill-name]`.
-/code-writing-software-development — all feature implementation, bug fixes, and refactors
-/tdd-workflow — write failing tests before any implementation
-/security-review — run before every PR touching auth, input, secrets, or APIs
-/autonomous-agents-task-automation — delegate to subagents and parallelize independent tasks
-/continuous-learning — extract and persist reusable patterns from this session
-/strategic-compact — compact context at phase boundaries to prevent context rot
-/build-website-web-app — React/TypeScript frontend components, routing, state
-/api-design — Express REST API design, request validation, error handling
-/postgres-patterns — Supabase/PostgreSQL queries, RLS policies, indexing
-/database-migrations — schema versioning and safe migration scripts
-/e2e-testing — Playwright end-to-end test authoring and execution
-/nutrient-document-processing — DOCX/PDF parsing, structure extraction
+Skills are loaded via `@` imports below. Active on every session start.
+
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/development/code-writing-software-development/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/testing-quality/tdd-workflow/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/testing-quality/security-review/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/planning/autonomous-agents-task-automation/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/core/continuous-learning/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/core/strategic-compact/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/development/build-website-web-app/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/development/api-design/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/data-backend/postgres-patterns/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/data-backend/database-migrations/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/testing-quality/e2e-testing/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/nutrient-document-processing/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/planning/planning-specification-architecture/SKILL.md
 
 ## Agents
-Specialized subagents in `.claude/agents/`. Invoke with `@agent-name`.
+Specialized subagents via junction → `C:/Users/Hp/Desktop/Experiment/claude_kit/agents/`. Invoke with `@agent-name`.
 **Default: do not invoke agents unless the condition below is explicitly met.**
 
 | Agent | Call ONLY when | Never call when |
@@ -46,7 +48,7 @@ Specialized subagents in `.claude/agents/`. Invoke with `@agent-name`.
 **Rule:** Never invoke agents in the last 20% of context. Never invoke inside autonomous loops or hook scripts.
 
 ## Commands
-Slash commands in `.claude/commands/`. Invoke with `/command-name`.
+Slash commands via junction → `C:/Users/Hp/Desktop/Experiment/claude_kit/commands/`. Invoke with `/command-name`.
 /plan — restate requirements and create implementation plan before any code
 /tdd — scaffold failing tests first, then implement (Red/Green/Refactor)
 /verify — run full build → type → lint → test → security → diff pipeline
@@ -94,39 +96,13 @@ If any check fails — fix it before proceeding.
   CLAUDE.md
   CLAUDE.planning.md
   project-config.md
-  skills/
-    continuous-learning/SKILL.md
-    strategic-compact/SKILL.md
-    tdd-workflow/SKILL.md
-    code-writing-software-development/SKILL.md
-    security-review/SKILL.md
-    autonomous-agents-task-automation/SKILL.md
-    build-website-web-app/SKILL.md
-    api-design/SKILL.md
-    postgres-patterns/SKILL.md
-    database-migrations/SKILL.md
-    e2e-testing/SKILL.md
-    nutrient-document-processing/SKILL.md
-    planning-specification-architecture/SKILL.md
-  agents/
-    planner.md, architect.md, code-reviewer.md
-    security-reviewer.md, tdd-guide.md, build-error-resolver.md
-    refactor-cleaner.md, e2e-runner.md, doc-updater.md, database-reviewer.md
-  commands/
-    plan.md, tdd.md, verify.md, quality-gate.md, build-fix.md
-    checkpoint.md, code-review.md, refactor-clean.md
-    save-session.md, resume-session.md, learn.md, learn-eval.md
-    model-route.md, e2e.md
+  agents/    → junction: C:/Users/Hp/Desktop/Experiment/claude_kit/agents/
+  commands/  → junction: C:/Users/Hp/Desktop/Experiment/claude_kit/commands/
+  hooks/     → junction: C:/Users/Hp/Desktop/Experiment/claude_kit/hooks/
+  contexts/  → junction: C:/Users/Hp/Desktop/Experiment/claude_kit/contexts/
   rules/
-    common/
-      security.md, testing.md, coding-style.md, patterns.md
-      performance.md, development-workflow.md, git-workflow.md
-      agents.md, hooks.md, context-budget.md
-    typescript/
-  hooks/
-    hooks.json
-  contexts/
-    dev.md, research.md, review.md
+    common/     → junction: C:/Users/Hp/Desktop/Experiment/claude_kit/rules/common/
+    typescript/ → junction: C:/Users/Hp/Desktop/Experiment/claude_kit/rules/typescript/
   mcp-configs/
     mcp-servers.json
 .spec/
