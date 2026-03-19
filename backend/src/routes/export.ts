@@ -34,13 +34,6 @@ function unauthorized(response: Response): void {
   });
 }
 
-function forbidden(response: Response): void {
-  response.status(403).json({
-    success: false,
-    error: 'Forbidden',
-  });
-}
-
 function notFound(response: Response): void {
   response.status(404).json({
     success: false,

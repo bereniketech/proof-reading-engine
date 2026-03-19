@@ -18,7 +18,8 @@
     "lint:fix:backend": "bun run --cwd backend lint:fix",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
-    "test:e2e": "dotenv -e .env -- playwright test"
+    "test:e2e": "dotenv -e .env -- playwright test",
+    "build": "npm run --workspace backend build"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

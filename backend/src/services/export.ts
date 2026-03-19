@@ -1,4 +1,4 @@
-import { PDFDocument, PDFPage, rgb } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
 import { createAdminSupabaseClient } from '../lib/supabase.js';
 
 interface Section {
@@ -75,7 +75,7 @@ function validateExportReadiness(sections: Section[]): { valid: boolean; error?:
   return { valid: true };
 }
 
-async function generatePdfBuffer(session: Session, sections: Section[]): Promise<Buffer> {
+async function generatePdfBuffer(_session: Session, sections: Section[]): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create();
   let page = pdfDoc.addPage([612, 792]); // Standard 8.5" x 11" letter
 
