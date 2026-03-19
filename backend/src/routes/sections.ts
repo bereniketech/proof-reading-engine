@@ -436,4 +436,195 @@ router.post('/sections/:id/instruct', async (req: Request, res: Response) => {
   });
 });
 
+const MAX_MERGE_COUNT = 20;
+
+router.post('/sessions/:sessionId/merge-sections', async (req: Request, res: Response) => {
+  const authToken = getVerifiedAccessToken(res);
+  const authenticatedUser = getAuthenticatedUser(res);
+  const sessionId = typeof req.params.sessionId === 'string' ? req.params.sessionId : '';
+
+  if (!authToken || !authenticatedUser) {
+    unauthorized(res);
+    return;
+  }
+
+  if (!isUuid(sessionId)) {
+    badRequest(res, 'Invalid session id format.');
+    return;
+  }
+
+  const body = req.body as Record<string, unknown> | undefined;
+  const rawIds = body?.section_ids;
+
+  if (!Array.isArray(rawIds) || rawIds.length < 2) {
+    badRequest(res, 'section_ids must be an array of at least 2 section IDs.');
+    return;
+  }
+
+  if (rawIds.length > MAX_MERGE_COUNT) {
+    badRequest(res, `Cannot merge more than ${MAX_MERGE_COUNT} sections at once.`);
+    return;
+  }
+
+  const sectionIds: string[] = [];
+  for (const rawId of rawIds) {
+    if (typeof rawId !== 'string' || !isUuid(rawId)) {
+      badRequest(res, 'All section_ids must be valid UUIDs.');
+      return;
+    }
+    sectionIds.push(rawId);
+  }
+
+  const uniqueIds = Array.from(new Set(sectionIds));
+  if (uniqueIds.length < 2) {
+    badRequest(res, 'section_ids must contain at least 2 distinct section IDs.');
+    return;
+  }
+
+  const admin = getAdminClient();
+
+  const { data: sessionData, error: sessionFetchError } = await admin
+    .from('sessions')
+    .select('id, user_id')
+    .eq('id', sessionId)
+    .maybeSingle();
+
+  if (sessionFetchError) {
+    serverError(res, 'Failed to verify session.');
+    return;
+  }
+
+  if (!sessionData) {
+    notFound(res);
+    return;
+  }
+
+  if (sessionData.user_id !== authenticatedUser.id) {
+    forbidden(res);
+    return;
+  }
+
+  const { data: sectionsToMerge, error: fetchSectionsError } = await admin
+    .from('sections')
+    .select(
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, final_text',
+    )
+    .eq('session_id', sessionId)
+    .in('id', uniqueIds);
+
+  if (fetchSectionsError) {
+    serverError(res, 'Failed to fetch sections.');
+    return;
+  }
+
+  if (!sectionsToMerge || sectionsToMerge.length !== uniqueIds.length) {
+    badRequest(res, 'One or more section IDs were not found in this session.');
+    return;
+  }
+
+  // Sort ascending by position so the lowest-position section survives
+  const sorted = [...sectionsToMerge].sort(
+    (a: { position: number }, b: { position: number }) => a.position - b.position,
+  );
+
+  const surviving = sorted[0] as {
+    id: string;
+    position: number;
+    section_type: string;
+    heading_level: number | null;
+    original_text: string;
+    corrected_text: string | null;
+    final_text: string | null;
+  };
+
+  const deleteIds = sorted
+    .slice(1)
+    .map((s: { id: string }) => s.id);
+
+  const mergedOriginalText = sorted
+    .map((s: { original_text: string }) => s.original_text)
+    .join('\n\n');
+
+  const mergedCorrectedText = sorted
+    .map(
+      (s: { final_text: string | null; corrected_text: string | null; original_text: string }) =>
+        s.final_text ?? s.corrected_text ?? s.original_text,
+    )
+    .join('\n\n');
+
+  const { error: updateError } = await admin
+    .from('sections')
+    .update({
+      original_text: mergedOriginalText,
+      corrected_text: mergedCorrectedText,
+      final_text: null,
+      change_summary: null,
+      status: 'ready',
+    })
+    .eq('id', surviving.id);
+
+  if (updateError) {
+    serverError(res, 'Failed to update merged section.');
+    return;
+  }
+
+  const { error: deleteError } = await admin
+    .from('sections')
+    .delete()
+    .in('id', deleteIds);
+
+  if (deleteError) {
+    serverError(res, 'Failed to remove merged sections.');
+    return;
+  }
+
+  // Resequence positions of all remaining sections
+  const { data: remaining, error: remainingError } = await admin
+    .from('sections')
+    .select('id, position')
+    .eq('session_id', sessionId)
+    .order('position', { ascending: true });
+
+  if (remainingError || !remaining) {
+    serverError(res, 'Failed to resequence section positions.');
+    return;
+  }
+
+  for (let i = 0; i < remaining.length; i += 1) {
+    const section = remaining[i] as { id: string; position: number };
+    if (section.position !== i) {
+      const { error: posError } = await admin
+        .from('sections')
+        .update({ position: i })
+        .eq('id', section.id);
+
+      if (posError) {
+        serverError(res, 'Failed to update section positions.');
+        return;
+      }
+    }
+  }
+
+  const { data: updatedSections, error: finalFetchError } = await admin
+    .from('sections')
+    .select(
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+    )
+    .eq('session_id', sessionId)
+    .order('position', { ascending: true });
+
+  if (finalFetchError || !updatedSections) {
+    serverError(res, 'Failed to fetch updated session sections.');
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      merged_section_id: surviving.id,
+      sections: updatedSections,
+    },
+  });
+});
+
 export { router as sectionsRouter };

@@ -75,6 +75,16 @@ interface ExportErrorResponse {
   error?: string;
 }
 
+interface MergeSectionsSuccessResponse {
+  success: true;
+  data: {
+    merged_section_id: string;
+    sections: SectionRecord[];
+  };
+}
+
+type MergeSectionsResponse = MergeSectionsSuccessResponse | ApiErrorResponse;
+
 const apiBaseUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:3001';
 const POLL_INTERVAL_MS = 2000;
 
@@ -218,6 +228,7 @@ export default function ReviewPage() {
   const [exportError, setExportError] = useState<string | null>(null);
   const [referenceStyle, setReferenceStyle] = useState<ReferenceStyle>('apa');
   const [linkingSectionId, setLinkingSectionId] = useState<string | null>(null);
+  const [mergingSectionId, setMergingSectionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -519,6 +530,81 @@ export default function ReviewPage() {
     }
   };
 
+  const handleMergeWithNext = async (): Promise<void> => {
+    if (!payload || !activeSection || !supabaseSession || !sessionId) {
+      return;
+    }
+
+    const sortedSections = [...payload.sections].sort((a, b) => a.position - b.position);
+    const currentIndex = sortedSections.findIndex((s) => s.id === activeSection.id);
+    if (currentIndex < 0 || currentIndex >= sortedSections.length - 1) {
+      return;
+    }
+
+    const nextSection = sortedSections[currentIndex + 1];
+    if (!nextSection) {
+      return;
+    }
+
+    setActionError(null);
+    setMergingSectionId(activeSection.id);
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/sessions/${encodeURIComponent(sessionId)}/merge-sections`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${supabaseSession.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ section_ids: [activeSection.id, nextSection.id] }),
+        },
+      );
+
+      const body = (await response.json()) as MergeSectionsResponse;
+      if (!response.ok || !body.success) {
+        throw new Error((body as ApiErrorResponse).error ?? 'Failed to merge sections.');
+      }
+
+      const mergeResult = (body as MergeSectionsSuccessResponse).data;
+
+      setPayload((current) => {
+        if (!current) return current;
+        return { ...current, sections: mergeResult.sections };
+      });
+
+      setActiveSectionId(mergeResult.merged_section_id);
+
+      // Clear dirty/edited state for the consumed section so the sync effect picks up fresh server text
+      const deletedId = nextSection.id;
+      setDirtySectionIds((current) => {
+        const next = { ...current };
+        delete next[activeSection.id];
+        delete next[deletedId];
+        return next;
+      });
+      setEditedTextBySectionId((current) => {
+        const next = { ...current };
+        delete next[deletedId];
+        return next;
+      });
+      setInstructionBySectionId((current) => {
+        const next = { ...current };
+        delete next[deletedId];
+        return next;
+      });
+    } catch (mergeError) {
+      setActionError(
+        mergeError instanceof Error
+          ? mergeError.message
+          : 'Failed to merge sections. Please retry.',
+      );
+    } finally {
+      setMergingSectionId(null);
+    }
+  };
+
   const handleExportPdf = async (): Promise<void> => {
     if (!supabaseSession) {
       setExportError('You are not authenticated.');
@@ -786,6 +872,11 @@ export default function ReviewPage() {
                 referenceData.options.length > 0 &&
                 !referenceData.referenceSectionIdSet.has(activeSection.id)
               }
+              canMergeWithNext={
+                payload.sections.findIndex((s) => s.id === activeSection.id) <
+                payload.sections.length - 1
+              }
+              isMerging={mergingSectionId === activeSection.id}
               onEditedTextChange={(nextValue) => {
                 setEditedTextBySectionId((current) => ({
                   ...current,
@@ -808,6 +899,7 @@ export default function ReviewPage() {
               onLinkedReferencePositionsChange={handleLinkedReferencesChange}
               onAccept={handleAccept}
               onReject={handleReject}
+              onMergeWithNext={handleMergeWithNext}
             />
           ) : (
             <div className="section-empty">

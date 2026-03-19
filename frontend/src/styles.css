@@ -760,6 +760,34 @@ p {
   gap: 0.65rem;
 }
 
+.section-merge-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.merge-button {
+  background: none;
+  border: 1px dashed #9ab5df;
+  border-radius: 0.5rem;
+  color: #4a78b8;
+  font-size: 0.82rem;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.merge-button:hover:not(:disabled) {
+  background: #eef4ff;
+  border-color: #5987cc;
+  color: #2d5ea3;
+}
+
+.merge-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
   .review-sidebar {
     display: none;

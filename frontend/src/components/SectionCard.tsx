@@ -37,12 +37,15 @@ interface SectionCardProps {
   readonly linkedReferencePositions: number[];
   readonly isUpdatingReferenceLinks: boolean;
   readonly canLinkReferences: boolean;
+  readonly canMergeWithNext: boolean;
+  readonly isMerging: boolean;
   readonly onEditedTextChange: (nextValue: string) => void;
   readonly onInstructionTextChange: (value: string) => void;
   readonly onApplyInstruction: () => Promise<void>;
   readonly onLinkedReferencePositionsChange: (positions: number[]) => Promise<void>;
   readonly onAccept: () => Promise<void>;
   readonly onReject: () => Promise<void>;
+  readonly onMergeWithNext: () => Promise<void>;
 }
 
 function tokenizeByWhitespace(text: string): string[] {
@@ -148,12 +151,15 @@ export function SectionCard({
   linkedReferencePositions,
   isUpdatingReferenceLinks,
   canLinkReferences,
+  canMergeWithNext,
+  isMerging,
   onEditedTextChange,
   onInstructionTextChange,
   onApplyInstruction,
   onLinkedReferencePositionsChange,
   onAccept,
   onReject,
+  onMergeWithNext,
 }: SectionCardProps) {
   const textareaId = `corrected-text-${section.id}`;
   const instructionId = `instruction-${section.id}`;
@@ -321,6 +327,21 @@ export function SectionCard({
           {isSaving ? 'Saving…' : 'Accept'}
         </button>
       </div>
+
+      {canMergeWithNext ? (
+        <div className="section-merge-row">
+          <button
+            type="button"
+            className="merge-button"
+            disabled={isPending || isMerging || isSaving}
+            onClick={() => {
+              void onMergeWithNext();
+            }}
+          >
+            {isMerging ? 'Merging…' : 'Merge with next section ↓'}
+          </button>
+        </div>
+      ) : null}
 
       {actionError ? (
         <p className="review-status-message review-status-message--error" role="alert">
