@@ -1,7 +1,11 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import express, { type Request, type Response } from 'express';
-dotenv.config();
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 import { verifySupabaseJwt } from './middleware/auth.js';
 import { exportRouter } from './routes/export.js';

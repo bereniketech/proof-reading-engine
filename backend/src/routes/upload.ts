@@ -414,6 +414,7 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
       .single();
 
     if (error || !data) {
+      console.error('[upload] Supabase insert error:', error);
       await cleanupUploadedFiles([mainFile, referenceFile]);
       res.status(500).json({
         success: false,

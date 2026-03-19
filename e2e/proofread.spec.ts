@@ -19,10 +19,11 @@ const REF_DOC = path.join(SAMPLES_DIR, 'CIEY2645341.pdf');
 
 async function login(page: Page): Promise<void> {
   await page.goto(BASE_URL);
-  await page.getByRole('button', { name: 'Login' }).click();
+  // The "Login" tab is already active by default, so fill the form directly
   await page.getByLabel('Email').fill(TEST_EMAIL);
   await page.getByLabel('Password').fill(TEST_PASSWORD);
-  await page.getByRole('button', { name: 'Login' }).click();
+  // Click the submit button inside the form
+  await page.locator('form').getByRole('button', { name: 'Login' }).click();
   // Wait until authenticated state is visible (upload dropzone appears)
   await expect(page.getByText('Authenticated')).toBeVisible({ timeout: 15_000 });
 }
@@ -89,8 +90,8 @@ test.describe('Proof-Reading Engine E2E', () => {
     await page.waitForURL(BASE_URL + '/', { timeout: 15_000 });
     await expect(page).toHaveURL(BASE_URL + '/');
 
-    // Login form should be visible
-    await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();
+    // Login form should be visible (use the submit button inside the form)
+    await expect(page.locator('form').getByRole('button', { name: 'Login' })).toBeVisible();
   });
 
   test('happy path: upload → proofread → accept all → export PDF', async ({ page }) => {
