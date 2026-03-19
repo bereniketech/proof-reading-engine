@@ -139,6 +139,7 @@ export function SectionCard({
   const hasReference = section.reference_text !== null && section.reference_text.length > 0;
   const hasSummary = section.change_summary !== null && section.change_summary.length > 0;
   const isPending = section.status === 'pending' && section.corrected_text === null;
+  const isMissingSection = section.original_text.length === 0 && hasReference;
 
   return (
     <div className="section-card">
@@ -147,10 +148,19 @@ export function SectionCard({
         <span className="section-detail-type">{section.section_type}</span>
       </div>
 
-      <div className="section-block">
-        <h2 className="section-block-label">Original text</h2>
-        <p className="section-block-content section-block-content--original">{section.original_text}</p>
-      </div>
+      {isMissingSection ? (
+        <div className="section-block section-block--missing">
+          <h2 className="section-block-label">Missing section</h2>
+          <p className="section-block-content section-block-content--missing">
+            This section is present in the reference document but missing from the uploaded document.
+          </p>
+        </div>
+      ) : (
+        <div className="section-block">
+          <h2 className="section-block-label">Original text</h2>
+          <p className="section-block-content section-block-content--original">{section.original_text}</p>
+        </div>
+      )}
 
       <div className="section-block">
         <label className="section-block-label" htmlFor={textareaId}>

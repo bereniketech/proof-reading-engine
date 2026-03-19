@@ -596,6 +596,16 @@ p {
   color: #445772;
 }
 
+.section-block--missing {
+  border-left: 3px solid #f59e0b;
+  padding-left: 12px;
+}
+
+.section-block-content--missing {
+  color: #92400e;
+  font-style: italic;
+}
+
 .section-block-content--summary {
   color: #2c5028;
   font-style: italic;

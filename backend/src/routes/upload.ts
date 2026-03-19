@@ -7,6 +7,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import multer, { MulterError } from 'multer';
 import { createUserScopedSupabaseClient } from '../lib/supabase.js';
 import { parseDocumentByType, type Section } from '../parsers/index.js';
+import { verifySectionMatch } from '../services/openai.js';
 import { runProofreadingOrchestrator } from '../services/proofreader.js';
 
 interface AuthenticatedUser {
@@ -248,8 +249,181 @@ function asStoredUpload(file: Express.Multer.File | undefined): StoredUpload | n
   };
 }
 
-function createReferenceTextByPosition(referenceSections: Section[]): Map<number, string> {
-  return new Map(referenceSections.map((section) => [section.position, section.original_text]));
+const HIGH_CONFIDENCE_THRESHOLD = 0.5;
+const LOW_CONFIDENCE_THRESHOLD = 0.15;
+
+function normalizeText(text: string): string[] {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+}
+
+function jaccardSimilarity(textA: string, textB: string): number {
+  const wordsA = new Set(normalizeText(textA));
+  const wordsB = new Set(normalizeText(textB));
+
+  if (wordsA.size === 0 && wordsB.size === 0) {
+    return 1;
+  }
+
+  if (wordsA.size === 0 || wordsB.size === 0) {
+    return 0;
+  }
+
+  let intersectionSize = 0;
+  for (const word of wordsA) {
+    if (wordsB.has(word)) {
+      intersectionSize += 1;
+    }
+  }
+
+  const unionSize = wordsA.size + wordsB.size - intersectionSize;
+  return unionSize === 0 ? 0 : intersectionSize / unionSize;
+}
+
+interface SectionRow {
+  position: number;
+  section_type: string;
+  heading_level: number | null;
+  original_text: string;
+  reference_text: string | null;
+}
+
+async function matchReferenceSections(mainSections: Section[], referenceSections: Section[]): Promise<SectionRow[]> {
+  if (referenceSections.length === 0) {
+    return mainSections.map((section) => ({
+      position: section.position,
+      section_type: section.section_type,
+      heading_level: section.heading_level,
+      original_text: section.original_text,
+      reference_text: null,
+    }));
+  }
+
+  // Build all (main, ref) similarity pairs
+  const pairs: Array<{ mainIdx: number; refIdx: number; similarity: number }> = [];
+  for (let m = 0; m < mainSections.length; m += 1) {
+    for (let r = 0; r < referenceSections.length; r += 1) {
+      const sim = jaccardSimilarity(mainSections[m]!.original_text, referenceSections[r]!.original_text);
+      if (sim >= LOW_CONFIDENCE_THRESHOLD) {
+        pairs.push({ mainIdx: m, refIdx: r, similarity: sim });
+      }
+    }
+  }
+
+  // Sort descending by similarity, with positional proximity as tiebreaker
+  pairs.sort((a, b) => {
+    if (b.similarity !== a.similarity) {
+      return b.similarity - a.similarity;
+    }
+    // Tiebreaker: prefer the pair closest in document position
+    return Math.abs(a.mainIdx - a.refIdx) - Math.abs(b.mainIdx - b.refIdx);
+  });
+
+  const matchedMain = new Set<number>();
+  const matchedRef = new Set<number>();
+  const refByMainIdx = new Map<number, number>();
+
+  // Tier 1: High-confidence matches (Jaccard >= 0.5) — match immediately
+  for (const pair of pairs) {
+    if (pair.similarity < HIGH_CONFIDENCE_THRESHOLD) {
+      break;
+    }
+    if (matchedMain.has(pair.mainIdx) || matchedRef.has(pair.refIdx)) {
+      continue;
+    }
+    matchedMain.add(pair.mainIdx);
+    matchedRef.add(pair.refIdx);
+    refByMainIdx.set(pair.mainIdx, pair.refIdx);
+  }
+
+  // Tier 2: Borderline matches (0.15 <= Jaccard < 0.5) — verify with LLM
+  const borderlinePairs = pairs.filter(
+    (pair) =>
+      pair.similarity >= LOW_CONFIDENCE_THRESHOLD &&
+      pair.similarity < HIGH_CONFIDENCE_THRESHOLD &&
+      !matchedMain.has(pair.mainIdx) &&
+      !matchedRef.has(pair.refIdx),
+  );
+
+  // Batch LLM verification for borderline pairs (process in order of descending similarity)
+  for (const pair of borderlinePairs) {
+    if (matchedMain.has(pair.mainIdx) || matchedRef.has(pair.refIdx)) {
+      continue;
+    }
+
+    const isMatch = await verifySectionMatch(
+      mainSections[pair.mainIdx]!.original_text,
+      referenceSections[pair.refIdx]!.original_text,
+    );
+
+    if (isMatch) {
+      matchedMain.add(pair.mainIdx);
+      matchedRef.add(pair.refIdx);
+      refByMainIdx.set(pair.mainIdx, pair.refIdx);
+    }
+  }
+
+  // Build rows from main sections with matched reference text
+  const rows: SectionRow[] = mainSections.map((section, idx) => {
+    const refIdx = refByMainIdx.get(idx);
+    return {
+      position: section.position,
+      section_type: section.section_type,
+      heading_level: section.heading_level,
+      original_text: section.original_text,
+      reference_text: refIdx !== undefined ? referenceSections[refIdx]!.original_text : null,
+    };
+  });
+
+  // Identify unmatched reference sections and insert them
+  const unmatchedRefIndices: number[] = [];
+  for (let r = 0; r < referenceSections.length; r += 1) {
+    if (!matchedRef.has(r)) {
+      unmatchedRefIndices.push(r);
+    }
+  }
+
+  if (unmatchedRefIndices.length > 0) {
+    // For each unmatched ref section, find the best insertion position
+    // by finding the nearest matched neighbor in the reference doc
+    for (const refIdx of unmatchedRefIndices) {
+      const refSection = referenceSections[refIdx]!;
+
+      // Look backward in the reference doc for the nearest matched section
+      let insertAfterMainIdx = -1;
+      for (let r = refIdx - 1; r >= 0; r -= 1) {
+        if (matchedRef.has(r)) {
+          // Find which main index this ref was matched to
+          for (const [mIdx, rIdx] of refByMainIdx.entries()) {
+            if (rIdx === r) {
+              insertAfterMainIdx = mIdx;
+              break;
+            }
+          }
+          break;
+        }
+      }
+
+      const insertPosition = insertAfterMainIdx + 1;
+      rows.splice(insertPosition === 0 ? 0 : insertPosition, 0, {
+        position: 0, // will be renumbered
+        section_type: refSection.section_type,
+        heading_level: refSection.heading_level,
+        original_text: '',
+        reference_text: refSection.original_text,
+      });
+    }
+
+    // Re-number positions sequentially
+    for (let i = 0; i < rows.length; i += 1) {
+      rows[i]!.position = i;
+    }
+  }
+
+  return rows;
 }
 
 async function delay(milliseconds: number): Promise<void> {
@@ -453,14 +627,7 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
         return;
       }
 
-      const referenceTextByPosition = createReferenceTextByPosition(referenceSections);
-      const sectionRows = sections.map((section) => ({
-        position: section.position,
-        section_type: section.section_type,
-        heading_level: section.heading_level,
-        original_text: section.original_text,
-        reference_text: referenceTextByPosition.get(section.position) ?? null,
-      }));
+      const sectionRows = await matchReferenceSections(sections, referenceSections);
 
       const { error: persistSectionsError } = await supabase.rpc('persist_session_sections', {
         p_session_id: data.id,

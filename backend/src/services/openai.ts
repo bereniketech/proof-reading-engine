@@ -9,6 +9,8 @@ const SYSTEM_PROMPT = [
   'You are a professional proofreader.',
   'Fix grammar, spelling, punctuation, style, and clarity.',
   'Preserve the original meaning, tone, and structure.',
+  'If the section text is empty but reference text is provided, the section is missing from the uploaded document.',
+  'In that case, set corrected_text to the reference text and set change_summary to "This section is present in the reference document but missing from the uploaded document. Consider adding it."',
   'Return valid JSON only with this exact shape:',
   '{"corrected_text": string, "change_summary": string}',
 ].join(' ');
@@ -33,7 +35,7 @@ interface ProofreadOptions {
 
 let openAIClient: OpenAI | null = null;
 
-function getOpenAIClient(): OpenAI {
+export function getOpenAIClient(): OpenAI {
   if (openAIClient) {
     return openAIClient;
   }
@@ -47,17 +49,76 @@ function getOpenAIClient(): OpenAI {
   return openAIClient;
 }
 
+const SECTION_MATCH_MODEL = 'gpt-4o-mini';
+const SECTION_MATCH_TIMEOUT_MS = 5_000;
+const SECTION_MATCH_TRUNCATE_CHARS = 300;
+
+export async function verifySectionMatch(
+  mainText: string,
+  referenceText: string,
+): Promise<boolean> {
+  const client = getOpenAIClient();
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(() => {
+    controller.abort();
+  }, SECTION_MATCH_TIMEOUT_MS);
+
+  try {
+    const truncatedMain = mainText.slice(0, SECTION_MATCH_TRUNCATE_CHARS);
+    const truncatedRef = referenceText.slice(0, SECTION_MATCH_TRUNCATE_CHARS);
+
+    const completion = await client.chat.completions.create(
+      {
+        model: SECTION_MATCH_MODEL,
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are comparing two document sections. Determine if they are about the same topic/content, even if worded differently. Return JSON: {"match": true} or {"match": false}',
+          },
+          {
+            role: 'user',
+            content: `Section A:\n${truncatedMain}\n\nSection B:\n${truncatedRef}`,
+          },
+        ],
+      },
+      { signal: controller.signal },
+    );
+
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      return false;
+    }
+
+    const parsed = JSON.parse(content) as { match?: boolean };
+    return parsed.match === true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+}
+
 function buildUserPrompt(section: ProofreadSectionInput): string {
+  const isMissingSection = section.originalText.length === 0 && section.referenceText;
+
   const sectionContext = [
     `Section type: ${section.sectionType ?? 'paragraph'}`,
     `Heading level: ${section.headingLevel ?? 'n/a'}`,
+    ...(isMissingSection ? ['Status: MISSING — this section exists in the reference but not in the uploaded document.'] : []),
   ].join('\n');
 
   const referenceContext = section.referenceText
     ? `Reference text to align tone/terminology:\n${section.referenceText}`
     : 'No reference text provided.';
 
-  return [sectionContext, '', referenceContext, '', `Section text:\n${section.originalText}`].join('\n');
+  const sectionText = isMissingSection
+    ? 'Section text:\n(empty — section is missing from uploaded document)'
+    : `Section text:\n${section.originalText}`;
+
+  return [sectionContext, '', referenceContext, '', sectionText].join('\n');
 }
 
 function parseProofreadResult(content: string | null | undefined): ProofreadResult {
