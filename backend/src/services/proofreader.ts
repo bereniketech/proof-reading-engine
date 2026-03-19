@@ -16,7 +16,6 @@ interface SessionSectionRecord {
   section_type: 'heading' | 'paragraph';
   heading_level: number | null;
   original_text: string;
-  reference_text: string | null;
   status: SectionStatus;
 }
 
@@ -100,7 +99,7 @@ function createSupabaseProofreaderRepository(accessToken: string): ProofreaderRe
     getPendingSections: async (sessionId: string): Promise<SessionSectionRecord[]> => {
       const { data, error } = await supabase
         .from('sections')
-        .select('id, position, section_type, heading_level, original_text, reference_text, status')
+        .select('id, position, section_type, heading_level, original_text, status')
         .eq('session_id', sessionId)
         .eq('status', 'pending')
         .order('position', { ascending: true });
@@ -147,14 +146,12 @@ function createDefaultDependencies(accessToken: string): ProofreaderDependencies
     proofreadWithOpenAI: async (section: SessionSectionRecord): Promise<ProofreadResult> =>
       proofreadSectionWithOpenAI({
         originalText: section.original_text,
-        referenceText: section.reference_text,
         sectionType: section.section_type,
         headingLevel: section.heading_level,
       }),
     proofreadWithLanguageTool: async (section: SessionSectionRecord): Promise<ProofreadResult> =>
       proofreadSectionWithLanguageTool({
         originalText: section.original_text,
-        referenceText: section.reference_text,
         sectionType: section.section_type,
         headingLevel: section.heading_level,
       }),

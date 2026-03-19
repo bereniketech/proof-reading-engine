@@ -2,7 +2,6 @@ import axios from 'axios';
 
 export interface ProofreadSectionInput {
   originalText: string;
-  referenceText?: string | null;
   sectionType?: 'heading' | 'paragraph';
   headingLevel?: number | null;
 }

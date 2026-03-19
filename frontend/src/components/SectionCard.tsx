@@ -8,7 +8,6 @@ export interface SectionCardSection {
   section_type: string;
   original_text: string;
   corrected_text: string | null;
-  reference_text: string | null;
   change_summary: string | null;
   status: SectionStatus;
 }
@@ -25,7 +24,12 @@ interface SectionCardProps {
   readonly editedText: string;
   readonly isSaving: boolean;
   readonly actionError: string | null;
+  readonly instructionText: string;
+  readonly isApplyingInstruction: boolean;
+  readonly instructionError: string | null;
   readonly onEditedTextChange: (nextValue: string) => void;
+  readonly onInstructionTextChange: (value: string) => void;
+  readonly onApplyInstruction: () => Promise<void>;
   readonly onAccept: () => Promise<void>;
   readonly onReject: () => Promise<void>;
 }
@@ -126,20 +130,24 @@ export function SectionCard({
   editedText,
   isSaving,
   actionError,
+  instructionText,
+  isApplyingInstruction,
+  instructionError,
   onEditedTextChange,
+  onInstructionTextChange,
+  onApplyInstruction,
   onAccept,
   onReject,
 }: SectionCardProps) {
   const textareaId = `corrected-text-${section.id}`;
+  const instructionId = `instruction-${section.id}`;
   const diffChunks = useMemo(
     () => buildDiffChunks(section.original_text, editedText),
     [section.original_text, editedText],
   );
 
-  const hasReference = section.reference_text !== null && section.reference_text.length > 0;
   const hasSummary = section.change_summary !== null && section.change_summary.length > 0;
   const isPending = section.status === 'pending' && section.corrected_text === null;
-  const isMissingSection = section.original_text.length === 0 && hasReference;
 
   return (
     <div className="section-card">
@@ -148,19 +156,10 @@ export function SectionCard({
         <span className="section-detail-type">{section.section_type}</span>
       </div>
 
-      {isMissingSection ? (
-        <div className="section-block section-block--missing">
-          <h2 className="section-block-label">Missing section</h2>
-          <p className="section-block-content section-block-content--missing">
-            This section is present in the reference document but missing from the uploaded document.
-          </p>
-        </div>
-      ) : (
-        <div className="section-block">
-          <h2 className="section-block-label">Original text</h2>
-          <p className="section-block-content section-block-content--original">{section.original_text}</p>
-        </div>
-      )}
+      <div className="section-block">
+        <h2 className="section-block-label">Original text</h2>
+        <p className="section-block-content section-block-content--original">{section.original_text}</p>
+      </div>
 
       <div className="section-block">
         <label className="section-block-label" htmlFor={textareaId}>
@@ -208,12 +207,38 @@ export function SectionCard({
         </div>
       ) : null}
 
-      {hasReference ? (
-        <details className="section-reference">
-          <summary className="section-reference-toggle">Reference text</summary>
-          <p className="section-block-content section-block-content--reference">{section.reference_text}</p>
-        </details>
-      ) : null}
+      <div className="section-block">
+        <label className="section-block-label" htmlFor={instructionId}>
+          Ask AI to modify this section
+        </label>
+        <div className="instruction-row">
+          <input
+            id={instructionId}
+            type="text"
+            className="instruction-input"
+            value={instructionText}
+            onChange={(event) => onInstructionTextChange(event.target.value)}
+            placeholder="e.g. &quot;make this more formal&quot;, &quot;shorten this paragraph&quot;"
+            disabled={isPending || isApplyingInstruction}
+            maxLength={2000}
+          />
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={isPending || isApplyingInstruction || instructionText.trim().length === 0}
+            onClick={() => {
+              void onApplyInstruction();
+            }}
+          >
+            {isApplyingInstruction ? 'Applying…' : 'Apply'}
+          </button>
+        </div>
+        {instructionError ? (
+          <p className="review-status-message review-status-message--error" role="alert">
+            {instructionError}
+          </p>
+        ) : null}
+      </div>
 
       <div className="section-actions">
         <button

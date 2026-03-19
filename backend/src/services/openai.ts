@@ -9,15 +9,20 @@ const SYSTEM_PROMPT = [
   'You are a professional proofreader.',
   'Fix grammar, spelling, punctuation, style, and clarity.',
   'Preserve the original meaning, tone, and structure.',
-  'If the section text is empty but reference text is provided, the section is missing from the uploaded document.',
-  'In that case, set corrected_text to the reference text and set change_summary to "This section is present in the reference document but missing from the uploaded document. Consider adding it."',
+  'Return valid JSON only with this exact shape:',
+  '{"corrected_text": string, "change_summary": string}',
+].join(' ');
+
+const INSTRUCTION_SYSTEM_PROMPT = [
+  'You are a professional editor.',
+  'The user will provide a document section and an instruction for how to modify it.',
+  'Apply the instruction and return the modified text.',
   'Return valid JSON only with this exact shape:',
   '{"corrected_text": string, "change_summary": string}',
 ].join(' ');
 
 export interface ProofreadSectionInput {
   originalText: string;
-  referenceText?: string | null;
   sectionType?: 'heading' | 'paragraph';
   headingLevel?: number | null;
 }
@@ -35,7 +40,7 @@ interface ProofreadOptions {
 
 let openAIClient: OpenAI | null = null;
 
-export function getOpenAIClient(): OpenAI {
+function getOpenAIClient(): OpenAI {
   if (openAIClient) {
     return openAIClient;
   }
@@ -49,76 +54,15 @@ export function getOpenAIClient(): OpenAI {
   return openAIClient;
 }
 
-const SECTION_MATCH_MODEL = 'gpt-4o-mini';
-const SECTION_MATCH_TIMEOUT_MS = 5_000;
-const SECTION_MATCH_TRUNCATE_CHARS = 300;
-
-export async function verifySectionMatch(
-  mainText: string,
-  referenceText: string,
-): Promise<boolean> {
-  const client = getOpenAIClient();
-  const controller = new AbortController();
-  const timeoutHandle = setTimeout(() => {
-    controller.abort();
-  }, SECTION_MATCH_TIMEOUT_MS);
-
-  try {
-    const truncatedMain = mainText.slice(0, SECTION_MATCH_TRUNCATE_CHARS);
-    const truncatedRef = referenceText.slice(0, SECTION_MATCH_TRUNCATE_CHARS);
-
-    const completion = await client.chat.completions.create(
-      {
-        model: SECTION_MATCH_MODEL,
-        temperature: 0,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are comparing two document sections. Determine if they are about the same topic/content, even if worded differently. Return JSON: {"match": true} or {"match": false}',
-          },
-          {
-            role: 'user',
-            content: `Section A:\n${truncatedMain}\n\nSection B:\n${truncatedRef}`,
-          },
-        ],
-      },
-      { signal: controller.signal },
-    );
-
-    const content = completion.choices[0]?.message?.content;
-    if (!content) {
-      return false;
-    }
-
-    const parsed = JSON.parse(content) as { match?: boolean };
-    return parsed.match === true;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timeoutHandle);
-  }
-}
-
 function buildUserPrompt(section: ProofreadSectionInput): string {
-  const isMissingSection = section.originalText.length === 0 && section.referenceText;
-
   const sectionContext = [
     `Section type: ${section.sectionType ?? 'paragraph'}`,
     `Heading level: ${section.headingLevel ?? 'n/a'}`,
-    ...(isMissingSection ? ['Status: MISSING — this section exists in the reference but not in the uploaded document.'] : []),
   ].join('\n');
 
-  const referenceContext = section.referenceText
-    ? `Reference text to align tone/terminology:\n${section.referenceText}`
-    : 'No reference text provided.';
+  const sectionText = `Section text:\n${section.originalText}`;
 
-  const sectionText = isMissingSection
-    ? 'Section text:\n(empty — section is missing from uploaded document)'
-    : `Section text:\n${section.originalText}`;
-
-  return [sectionContext, '', referenceContext, '', sectionText].join('\n');
+  return [sectionContext, '', sectionText].join('\n');
 }
 
 function parseProofreadResult(content: string | null | undefined): ProofreadResult {
@@ -237,6 +181,37 @@ export async function proofreadSectionWithOpenAI(
 
   const detail = lastError instanceof Error ? `: ${lastError.message}` : '';
   throw new Error(`OpenAI proofreading failed after retry${detail}`);
+}
+
+export async function applySectionInstruction(
+  sectionText: string,
+  instruction: string,
+): Promise<ProofreadResult> {
+  const client = getOpenAIClient();
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(() => {
+    controller.abort();
+  }, OPENAI_TIMEOUT_MS);
+
+  try {
+    const completion = await client.chat.completions.create(
+      {
+        model: OPENAI_MODEL,
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: INSTRUCTION_SYSTEM_PROMPT },
+          { role: 'user', content: `Section text:\n${sectionText}\n\nInstruction:\n${instruction}` },
+        ],
+      },
+      { signal: controller.signal },
+    );
+
+    const content = completion.choices[0]?.message?.content;
+    return parseProofreadResult(content);
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
 }
 
 export const openAIServiceInternals = {

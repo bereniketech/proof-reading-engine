@@ -22,7 +22,6 @@ interface SectionRecord {
   heading_level: number | null;
   original_text: string;
   corrected_text: string | null;
-  reference_text: string | null;
   final_text: string | null;
   change_summary: string | null;
   status: SectionStatus;
@@ -53,6 +52,7 @@ interface SectionPatchSuccessResponse {
 }
 
 type SectionPatchResponse = SectionPatchSuccessResponse | ApiErrorResponse;
+type SectionInstructResponse = SectionPatchSuccessResponse | ApiErrorResponse;
 
 interface ExportErrorResponse {
   success?: false;
@@ -93,6 +93,9 @@ export default function ReviewPage() {
   const [dirtySectionIds, setDirtySectionIds] = useState<Record<string, boolean>>({});
   const [savingSectionId, setSavingSectionId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [instructionBySectionId, setInstructionBySectionId] = useState<Record<string, string>>({});
+  const [applyingSectionId, setApplyingSectionId] = useState<string | null>(null);
+  const [instructionError, setInstructionError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -341,6 +344,61 @@ export default function ReviewPage() {
     }
   };
 
+  const handleApplyInstruction = async (): Promise<void> => {
+    if (!supabaseSession || !activeSection) {
+      return;
+    }
+
+    const instruction = (instructionBySectionId[activeSection.id] ?? '').trim();
+    if (instruction.length === 0) {
+      return;
+    }
+
+    setInstructionError(null);
+    setApplyingSectionId(activeSection.id);
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/sections/${encodeURIComponent(activeSection.id)}/instruct`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${supabaseSession.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ instruction }),
+        },
+      );
+
+      const body = (await response.json()) as SectionInstructResponse;
+      if (!response.ok || !body.success) {
+        throw new Error((body as ApiErrorResponse).error ?? 'Failed to apply instruction.');
+      }
+
+      const updated = (body as SectionPatchSuccessResponse).data;
+      updateSectionInPayload(updated);
+
+      setEditedTextBySectionId((current) => ({
+        ...current,
+        [updated.id]: updated.final_text ?? updated.corrected_text ?? '',
+      }));
+      setDirtySectionIds((current) => ({
+        ...current,
+        [updated.id]: false,
+      }));
+      setInstructionBySectionId((current) => ({
+        ...current,
+        [activeSection.id]: '',
+      }));
+    } catch (err) {
+      setInstructionError(
+        err instanceof Error ? err.message : 'Failed to apply instruction. Please try again.',
+      );
+    } finally {
+      setApplyingSectionId(null);
+    }
+  };
+
   const handleExportPdf = async (): Promise<void> => {
     if (!supabaseSession) {
       setExportError('You are not authenticated.');
@@ -528,6 +586,9 @@ export default function ReviewPage() {
               editedText={getEditedText(activeSection)}
               isSaving={savingSectionId === activeSection.id}
               actionError={actionError}
+              instructionText={instructionBySectionId[activeSection.id] ?? ''}
+              isApplyingInstruction={applyingSectionId === activeSection.id}
+              instructionError={instructionError}
               onEditedTextChange={(nextValue) => {
                 setEditedTextBySectionId((current) => ({
                   ...current,
@@ -539,6 +600,14 @@ export default function ReviewPage() {
                 }));
                 setActionError(null);
               }}
+              onInstructionTextChange={(value) => {
+                setInstructionBySectionId((current) => ({
+                  ...current,
+                  [activeSection.id]: value,
+                }));
+                setInstructionError(null);
+              }}
+              onApplyInstruction={handleApplyInstruction}
               onAccept={handleAccept}
               onReject={handleReject}
             />

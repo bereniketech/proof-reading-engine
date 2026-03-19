@@ -670,6 +670,26 @@ p {
   user-select: none;
 }
 
+.instruction-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.instruction-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.instruction-input:disabled {
+  opacity: 0.5;
+}
+
 .section-actions {
   display: flex;
   justify-content: flex-end;

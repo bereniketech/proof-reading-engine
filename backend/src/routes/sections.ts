@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { createAdminSupabaseClient, createUserScopedSupabaseClient } from '../lib/supabase.js';
+import { applySectionInstruction } from '../services/openai.js';
 
 type SectionStatus = 'pending' | 'ready' | 'accepted' | 'rejected';
 
@@ -315,6 +316,99 @@ router.patch('/sections/:id', async (req: Request, res: Response) => {
     }
 
     notFound(res);
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: updatedSection,
+  });
+});
+
+const MAX_INSTRUCTION_LENGTH = 2000;
+
+router.post('/sections/:id/instruct', async (req: Request, res: Response) => {
+  const authToken = getVerifiedAccessToken(res);
+  const authenticatedUser = getAuthenticatedUser(res);
+  const sectionId = typeof req.params.id === 'string' ? req.params.id : '';
+
+  if (!authToken || !authenticatedUser) {
+    unauthorized(res);
+    return;
+  }
+
+  if (!isUuid(sectionId)) {
+    badRequest(res, 'Invalid section id format.');
+    return;
+  }
+
+  const body = req.body as Record<string, unknown> | undefined;
+  const instruction = typeof body?.instruction === 'string' ? body.instruction.trim() : '';
+
+  if (instruction.length === 0) {
+    badRequest(res, 'Instruction is required.');
+    return;
+  }
+
+  if (instruction.length > MAX_INSTRUCTION_LENGTH) {
+    badRequest(res, `Instruction must be ${MAX_INSTRUCTION_LENGTH} characters or fewer.`);
+    return;
+  }
+
+  const supabase = createUserScopedSupabaseClient(authToken);
+  const { data: section, error: fetchError } = await supabase
+    .from('sections')
+    .select(
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, final_text, change_summary, status, created_at, updated_at',
+    )
+    .eq('id', sectionId)
+    .maybeSingle();
+
+  if (fetchError) {
+    serverError(res, 'Failed to fetch section.');
+    return;
+  }
+
+  if (!section) {
+    const ownerId = await getSectionOwnerId(sectionId);
+    if (ownerId && ownerId !== authenticatedUser.id) {
+      forbidden(res);
+      return;
+    }
+
+    notFound(res);
+    return;
+  }
+
+  const currentText = (section.final_text ?? section.corrected_text ?? section.original_text) as string;
+
+  let result;
+  try {
+    result = await applySectionInstruction(currentText, instruction);
+  } catch (aiError) {
+    console.error('applySectionInstruction failed', {
+      sectionId,
+      error: aiError instanceof Error ? aiError.message : 'Unknown error',
+    });
+    serverError(res, 'AI instruction failed. Please try again.');
+    return;
+  }
+
+  const { data: updatedSection, error: updateError } = await supabase
+    .from('sections')
+    .update({
+      corrected_text: result.corrected_text,
+      change_summary: result.change_summary,
+      status: 'ready',
+    })
+    .eq('id', sectionId)
+    .select(
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, final_text, change_summary, status, created_at, updated_at',
+    )
+    .maybeSingle();
+
+  if (updateError || !updatedSection) {
+    serverError(res, 'Failed to update section after applying instruction.');
     return;
   }
 

@@ -8,7 +8,6 @@ type SectionRecord = {
   section_type: 'heading' | 'paragraph';
   heading_level: number | null;
   original_text: string;
-  reference_text: string | null;
   status: 'pending' | 'ready' | 'accepted' | 'rejected';
 };
 
@@ -25,7 +24,6 @@ function createSection(id: number): SectionRecord {
     section_type: 'paragraph',
     heading_level: null,
     original_text: `This are paragraph ${id}.`,
-    reference_text: null,
     status: 'pending',
   };
 }

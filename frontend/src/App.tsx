@@ -3,7 +3,6 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 
 type AuthMode = 'login' | 'signup';
-type UploadField = 'file' | 'reference';
 
 interface UploadSuccessResponse {
   sessionId: string;
@@ -67,8 +66,7 @@ function App() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const [mainFile, setMainFile] = useState<File | null>(null);
-  const [referenceFile, setReferenceFile] = useState<File | null>(null);
-  const [draggingField, setDraggingField] = useState<UploadField | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -160,58 +158,45 @@ function App() {
     }
   };
 
-  const assignFileToField = (field: UploadField, file: File | null): void => {
+  const assignFile = (file: File | null): void => {
     if (!file) {
       return;
     }
 
     const validationError = validateUploadFile(file);
     if (validationError) {
-      if (field === 'file') {
-        setMainFile(null);
-      } else {
-        setReferenceFile(null);
-      }
+      setMainFile(null);
       setUploadError(validationError);
       return;
     }
 
     setUploadError(null);
-    if (field === 'file') {
-      setMainFile(file);
-      return;
-    }
-
-    setReferenceFile(file);
+    setMainFile(file);
   };
 
-  const handleFileInputChange = (field: UploadField, event: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
     const selectedFile = event.target.files?.[0] ?? null;
-    assignFileToField(field, selectedFile);
+    assignFile(selectedFile);
     event.target.value = '';
   };
 
-  const handleDragOver = (field: UploadField, event: React.DragEvent<HTMLLabelElement>): void => {
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>): void => {
     event.preventDefault();
-    setDraggingField(field);
+    setIsDragging(true);
   };
 
   const handleDragLeave = (event: React.DragEvent<HTMLLabelElement>): void => {
     event.preventDefault();
-    setDraggingField((current) => {
-      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-        return null;
-      }
-
-      return current;
-    });
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setIsDragging(false);
+    }
   };
 
-  const handleDrop = (field: UploadField, event: React.DragEvent<HTMLLabelElement>): void => {
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>): void => {
     event.preventDefault();
-    setDraggingField(null);
+    setIsDragging(false);
     const droppedFile = event.dataTransfer.files?.[0] ?? null;
-    assignFileToField(field, droppedFile);
+    assignFile(droppedFile);
   };
 
   const handleUpload = async (): Promise<void> => {
@@ -238,10 +223,6 @@ function App() {
     try {
       const formData = new FormData();
       formData.append('file', mainFile);
-
-      if (referenceFile) {
-        formData.append('reference', referenceFile);
-      }
 
       const responsePayload = await new Promise<UploadSuccessResponse>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -317,41 +298,21 @@ function App() {
 
             <div className="upload-grid">
               <label
-                className={draggingField === 'file' ? 'dropzone active' : 'dropzone'}
-                onDragOver={(event) => handleDragOver('file', event)}
+                className={isDragging ? 'dropzone active' : 'dropzone'}
+                onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
-                onDrop={(event) => handleDrop('file', event)}
+                onDrop={handleDrop}
               >
                 <input
                   type="file"
                   accept=".docx,.pdf,.txt"
-                  onChange={(event) => handleFileInputChange('file', event)}
+                  onChange={handleFileInputChange}
                 />
-                <span className="dropzone-title">Main document</span>
+                <span className="dropzone-title">Upload document</span>
                 <span className="dropzone-copy">Drag and drop or click to browse (.docx, .pdf, .txt)</span>
                 {mainFile ? (
                   <span className="file-meta">
                     {mainFile.name} ({formatBytes(mainFile.size)})
-                  </span>
-                ) : null}
-              </label>
-
-              <label
-                className={draggingField === 'reference' ? 'dropzone active' : 'dropzone'}
-                onDragOver={(event) => handleDragOver('reference', event)}
-                onDragLeave={handleDragLeave}
-                onDrop={(event) => handleDrop('reference', event)}
-              >
-                <input
-                  type="file"
-                  accept=".docx,.pdf,.txt"
-                  onChange={(event) => handleFileInputChange('reference', event)}
-                />
-                <span className="dropzone-title">Reference document (optional)</span>
-                <span className="dropzone-copy">Add a style/content reference document</span>
-                {referenceFile ? (
-                  <span className="file-meta">
-                    {referenceFile.name} ({formatBytes(referenceFile.size)})
                   </span>
                 ) : null}
               </label>

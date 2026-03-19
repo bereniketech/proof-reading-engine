@@ -9,7 +9,6 @@ import {
 
 const sampleSection: ProofreadSectionInput = {
   originalText: 'this are sample sentence.',
-  referenceText: 'Use concise professional tone.',
   sectionType: 'paragraph',
   headingLevel: null,
 };
