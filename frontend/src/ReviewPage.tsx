@@ -4,6 +4,8 @@ import { supabase } from './lib/supabase';
 import { SectionCard } from './components/SectionCard';
 
 type SectionStatus = 'pending' | 'ready' | 'accepted' | 'rejected';
+type EditableSectionType = 'heading' | 'paragraph';
+type InsertPlacement = 'above' | 'below';
 type ReferenceStyle = 'apa' | 'mla' | 'chicago' | 'ieee' | 'vancouver';
 
 interface ReferenceOption {
@@ -83,7 +85,26 @@ interface MergeSectionsSuccessResponse {
   };
 }
 
+interface AddSectionSuccessResponse {
+  success: true;
+  data: {
+    inserted_section_id: string;
+    sections: SectionRecord[];
+  };
+}
+
+interface SplitSectionSuccessResponse {
+  success: true;
+  data: {
+    updated_section_id: string;
+    inserted_section_id: string;
+    sections: SectionRecord[];
+  };
+}
+
 type MergeSectionsResponse = MergeSectionsSuccessResponse | ApiErrorResponse;
+type AddSectionResponse = AddSectionSuccessResponse | ApiErrorResponse;
+type SplitSectionResponse = SplitSectionSuccessResponse | ApiErrorResponse;
 
 const apiBaseUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:3001';
 const POLL_INTERVAL_MS = 2000;
@@ -229,6 +250,16 @@ export default function ReviewPage() {
   const [referenceStyle, setReferenceStyle] = useState<ReferenceStyle>('apa');
   const [linkingSectionId, setLinkingSectionId] = useState<string | null>(null);
   const [mergingSectionId, setMergingSectionId] = useState<string | null>(null);
+  const [addingSectionId, setAddingSectionId] = useState<string | null>(null);
+  const [splittingSectionId, setSplittingSectionId] = useState<string | null>(null);
+  const [newSectionType, setNewSectionType] = useState<EditableSectionType>('paragraph');
+  const [newSectionHeadingLevel, setNewSectionHeadingLevel] = useState(2);
+  const [newSectionText, setNewSectionText] = useState('');
+  const [addSectionError, setAddSectionError] = useState<string | null>(null);
+  const [splitSectionType, setSplitSectionType] = useState<EditableSectionType>('paragraph');
+  const [splitSectionHeadingLevel, setSplitSectionHeadingLevel] = useState(2);
+  const [splitSectionText, setSplitSectionText] = useState('');
+  const [splitSectionError, setSplitSectionError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -365,6 +396,17 @@ export default function ReviewPage() {
       return didChange ? next : previous;
     });
   }, [dirtySectionIds, payload]);
+
+  useEffect(() => {
+    setNewSectionType('paragraph');
+    setNewSectionHeadingLevel(2);
+    setNewSectionText('');
+    setAddSectionError(null);
+    setSplitSectionType('paragraph');
+    setSplitSectionHeadingLevel(2);
+    setSplitSectionText('');
+    setSplitSectionError(null);
+  }, [activeSectionId]);
 
   const patchSection = async (
     sectionId: string,
@@ -602,6 +644,146 @@ export default function ReviewPage() {
       );
     } finally {
       setMergingSectionId(null);
+    }
+  };
+
+  const handleAddSection = async (placement: InsertPlacement): Promise<void> => {
+    if (!payload || !activeSection || !supabaseSession || !sessionId) {
+      return;
+    }
+
+    const text = newSectionText.trim();
+    if (text.length === 0) {
+      return;
+    }
+
+    setActionError(null);
+    setAddSectionError(null);
+    setAddingSectionId(activeSection.id);
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/sessions/${encodeURIComponent(sessionId)}/sections`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${supabaseSession.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            anchor_section_id: activeSection.id,
+            placement,
+            section_type: newSectionType,
+            heading_level: newSectionType === 'heading' ? newSectionHeadingLevel : null,
+            text,
+          }),
+        },
+      );
+
+      const body = (await response.json()) as AddSectionResponse;
+      if (!response.ok || !body.success) {
+        throw new Error((body as ApiErrorResponse).error ?? 'Failed to add section.');
+      }
+
+      const addResult = (body as AddSectionSuccessResponse).data;
+      setPayload((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          sections: addResult.sections,
+        };
+      });
+      setActiveSectionId(addResult.inserted_section_id);
+      setNewSectionType('paragraph');
+      setNewSectionHeadingLevel(2);
+      setNewSectionText('');
+    } catch (addError) {
+      setAddSectionError(
+        addError instanceof Error ? addError.message : 'Failed to add section. Please retry.',
+      );
+    } finally {
+      setAddingSectionId(null);
+    }
+  };
+
+  const handleSplitSection = async (): Promise<void> => {
+    if (!payload || !activeSection || !supabaseSession || !sessionId) {
+      return;
+    }
+
+    const topText = getEditedText(activeSection).trim();
+    const bottomText = splitSectionText.trim();
+
+    if (topText.length === 0 || bottomText.length === 0) {
+      return;
+    }
+
+    setActionError(null);
+    setSplitSectionError(null);
+    setSplittingSectionId(activeSection.id);
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/sections/${encodeURIComponent(activeSection.id)}/split`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${supabaseSession.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            top_text: topText,
+            bottom_text: bottomText,
+            bottom_section_type: splitSectionType,
+            bottom_heading_level: splitSectionType === 'heading' ? splitSectionHeadingLevel : null,
+          }),
+        },
+      );
+
+      const body = (await response.json()) as SplitSectionResponse;
+      if (!response.ok || !body.success) {
+        throw new Error((body as ApiErrorResponse).error ?? 'Failed to split section.');
+      }
+
+      const splitResult = (body as SplitSectionSuccessResponse).data;
+      setPayload((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          sections: splitResult.sections,
+        };
+      });
+      setEditedTextBySectionId((current) => ({
+        ...current,
+        [activeSection.id]: topText,
+        [splitResult.inserted_section_id]: bottomText,
+      }));
+      setDirtySectionIds((current) => ({
+        ...current,
+        [activeSection.id]: false,
+        [splitResult.inserted_section_id]: false,
+      }));
+      setInstructionBySectionId((current) => {
+        const next = { ...current };
+        delete next[splitResult.inserted_section_id];
+        return next;
+      });
+      setActiveSectionId(splitResult.inserted_section_id);
+      setSplitSectionType('paragraph');
+      setSplitSectionHeadingLevel(2);
+      setSplitSectionText('');
+    } catch (splitError) {
+      setSplitSectionError(
+        splitError instanceof Error ? splitError.message : 'Failed to split section. Please retry.',
+      );
+    } finally {
+      setSplittingSectionId(null);
     }
   };
 
@@ -877,6 +1059,16 @@ export default function ReviewPage() {
                 payload.sections.length - 1
               }
               isMerging={mergingSectionId === activeSection.id}
+              addSectionText={newSectionText}
+              addSectionType={newSectionType}
+              addSectionHeadingLevel={newSectionHeadingLevel}
+              isAddingSection={addingSectionId === activeSection.id}
+              addSectionError={addSectionError}
+              splitSectionText={splitSectionText}
+              splitSectionType={splitSectionType}
+              splitSectionHeadingLevel={splitSectionHeadingLevel}
+              isSplittingSection={splittingSectionId === activeSection.id}
+              splitSectionError={splitSectionError}
               onEditedTextChange={(nextValue) => {
                 setEditedTextBySectionId((current) => ({
                   ...current,
@@ -900,6 +1092,14 @@ export default function ReviewPage() {
               onAccept={handleAccept}
               onReject={handleReject}
               onMergeWithNext={handleMergeWithNext}
+              onAddSectionTextChange={setNewSectionText}
+              onAddSectionTypeChange={setNewSectionType}
+              onAddSectionHeadingLevelChange={setNewSectionHeadingLevel}
+              onAddSection={handleAddSection}
+              onSplitSectionTextChange={setSplitSectionText}
+              onSplitSectionTypeChange={setSplitSectionType}
+              onSplitSectionHeadingLevelChange={setSplitSectionHeadingLevel}
+              onSplitSection={handleSplitSection}
             />
           ) : (
             <div className="section-empty">

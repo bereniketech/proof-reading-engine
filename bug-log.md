@@ -4,6 +4,12 @@
 - **Fix applied:** Changed `[^\s]` to `[A-Z]` so only lines whose text (after the number) starts with an uppercase letter are treated as numbered headings.
 - **Affected file(s):** backend/src/parsers/pdf.ts
 
+## [2026-03-19] Reference links drifted when sections were reordered
+- **What broke:** Adding or merging sections could leave citation links pointing at the wrong reference entries after section positions changed.
+- **Root cause:** `reference_text` stores `linked_reference_positions`, so position-based links became stale whenever section insertion or merge resequenced the session.
+- **Fix applied:** Added reference-link remapping after section insertions and merges so old linked positions are translated onto the new section order, with merged references redirected to the surviving section.
+- **Affected file(s):** backend/src/routes/sections.ts
+
 ## [2026-03-16] Upload route stability and error-safety fixes
 - **What broke:** Upload flow could leak temporary files on backend failures, classify client validation errors as server errors, and expose internal error details; health route was unintentionally auth-protected.
 - **Root cause:** Missing cleanup on some early-return/failure paths, generic error handling that did not separate upload validation failures, and middleware order putting `/api/health` behind JWT auth.

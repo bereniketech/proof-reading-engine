@@ -668,6 +668,10 @@ p {
   color: #6b90bb;
 }
 
+.section-editor--compact {
+  min-height: 7.5rem;
+}
+
 .section-diff-content {
   border-radius: 0.55rem;
   border: 1px solid #dce9f9;
@@ -754,6 +758,30 @@ p {
   word-break: break-word;
 }
 
+.section-add-controls {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+}
+
+.section-add-select {
+  width: auto;
+  min-width: 8rem;
+}
+
+.section-add-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.section-split-hint {
+  color: #516985;
+  font-size: 0.88rem;
+  margin-bottom: 0.7rem;
+}
+
 .section-actions {
   display: flex;
   justify-content: flex-end;
@@ -808,6 +836,14 @@ p {
 
   .mobile-section-picker {
     display: grid;
+  }
+
+  .section-add-controls {
+    flex-direction: column;
+  }
+
+  .section-add-actions {
+    flex-direction: column;
   }
 
   .section-actions {
