@@ -1,9 +1,24 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Session as SupabaseSession } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
 import { SectionCard } from './components/SectionCard';
 
 type SectionStatus = 'pending' | 'ready' | 'accepted' | 'rejected';
+type ReferenceStyle = 'apa' | 'mla' | 'chicago' | 'ieee' | 'vancouver';
+
+interface ReferenceOption {
+  position: number;
+  text: string;
+}
+
+const REFERENCE_HEADING_TEXTS = new Set(['references', 'bibliography', 'works cited']);
+const REFERENCE_STYLES: Array<{ value: ReferenceStyle; label: string }> = [
+  { value: 'apa', label: 'APA' },
+  { value: 'mla', label: 'MLA' },
+  { value: 'chicago', label: 'Chicago' },
+  { value: 'ieee', label: 'IEEE' },
+  { value: 'vancouver', label: 'Vancouver' },
+];
 
 interface SessionRecord {
   id: string;
@@ -22,6 +37,7 @@ interface SectionRecord {
   heading_level: number | null;
   original_text: string;
   corrected_text: string | null;
+  reference_text: string | null;
   final_text: string | null;
   change_summary: string | null;
   status: SectionStatus;
@@ -77,6 +93,108 @@ function allNonPending(sections: SectionRecord[]): boolean {
   return sections.length > 0 && sections.every((s) => s.status !== 'pending');
 }
 
+function normalizeText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function getPreferredSectionText(section: SectionRecord): string {
+  return (section.final_text ?? section.corrected_text ?? section.original_text).trim();
+}
+
+function getReferencesHeadingIndex(sections: SectionRecord[]): number {
+  return sections.findIndex((section) => {
+    if (section.section_type !== 'heading') {
+      return false;
+    }
+
+    return REFERENCE_HEADING_TEXTS.has(normalizeText(getPreferredSectionText(section)));
+  });
+}
+
+function deriveReferenceData(sections: SectionRecord[]): {
+  options: ReferenceOption[];
+  referenceSectionIdSet: Set<string>;
+} {
+  const headingIndex = getReferencesHeadingIndex(sections);
+  if (headingIndex < 0) {
+    return {
+      options: [],
+      referenceSectionIdSet: new Set<string>(),
+    };
+  }
+
+  const options: ReferenceOption[] = [];
+  const referenceSectionIdSet = new Set<string>();
+
+  const headingSection = sections[headingIndex];
+  if (headingSection) {
+    referenceSectionIdSet.add(headingSection.id);
+  }
+
+  for (let i = headingIndex + 1; i < sections.length; i += 1) {
+    const section = sections[i];
+    if (!section) {
+      continue;
+    }
+
+    if (section.section_type === 'heading') {
+      break;
+    }
+
+    referenceSectionIdSet.add(section.id);
+    const text = getPreferredSectionText(section);
+    if (!text) {
+      continue;
+    }
+
+    options.push({
+      position: section.position,
+      text,
+    });
+  }
+
+  return {
+    options,
+    referenceSectionIdSet,
+  };
+}
+
+function parseLinkedReferencePositions(referenceText: string | null): number[] {
+  if (!referenceText) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(referenceText) as { linked_reference_positions?: unknown };
+    if (!Array.isArray(parsed.linked_reference_positions)) {
+      return [];
+    }
+
+    const deduped = new Set<number>();
+    for (const rawValue of parsed.linked_reference_positions) {
+      if (typeof rawValue !== 'number' || !Number.isFinite(rawValue)) {
+        continue;
+      }
+
+      deduped.add(Math.trunc(rawValue));
+    }
+
+    return Array.from(deduped.values()).sort((a, b) => a - b);
+  } catch {
+    return [];
+  }
+}
+
+function serializeLinkedReferencePositions(positions: number[]): string {
+  const uniqueSorted = Array.from(new Set(positions.map((position) => Math.trunc(position)))).sort(
+    (a, b) => a - b,
+  );
+
+  return JSON.stringify({
+    linked_reference_positions: uniqueSorted,
+  });
+}
+
 function StatusBadge({ status }: { readonly status: SectionStatus }) {
   return (
     <span className={`status-badge status-badge--${status}`}>
@@ -98,6 +216,8 @@ export default function ReviewPage() {
   const [instructionError, setInstructionError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [referenceStyle, setReferenceStyle] = useState<ReferenceStyle>('apa');
+  const [linkingSectionId, setLinkingSectionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -237,7 +357,7 @@ export default function ReviewPage() {
 
   const patchSection = async (
     sectionId: string,
-    updates: { status?: SectionStatus; final_text?: string },
+    updates: { status?: SectionStatus; final_text?: string; reference_text?: string },
   ): Promise<SectionRecord> => {
     if (!supabaseSession) {
       throw new Error('You are not authenticated.');
@@ -418,7 +538,9 @@ export default function ReviewPage() {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${supabaseSession.access_token}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ reference_style: referenceStyle }),
       });
 
       if (!response.ok) {
@@ -459,6 +581,57 @@ export default function ReviewPage() {
   };
 
   const activeSection = payload?.sections.find((s) => s.id === activeSectionId) ?? null;
+  const referenceData = useMemo(() => {
+    if (!payload) {
+      return {
+        options: [] as ReferenceOption[],
+        referenceSectionIdSet: new Set<string>(),
+      };
+    }
+
+    return deriveReferenceData(payload.sections);
+  }, [payload]);
+
+  const activeSectionLinkedPositions = useMemo(() => {
+    if (!activeSection) {
+      return [] as number[];
+    }
+
+    return parseLinkedReferencePositions(activeSection.reference_text);
+  }, [activeSection]);
+
+  const handleLinkedReferencesChange = async (nextPositions: number[]): Promise<void> => {
+    if (!activeSection) {
+      return;
+    }
+
+    setActionError(null);
+    setLinkingSectionId(activeSection.id);
+
+    const previousSection = activeSection;
+    const optimisticSection: SectionRecord = {
+      ...activeSection,
+      reference_text: serializeLinkedReferencePositions(nextPositions),
+    };
+
+    updateSectionInPayload(optimisticSection);
+
+    try {
+      const updated = await patchSection(activeSection.id, {
+        reference_text: optimisticSection.reference_text ?? '',
+      });
+      updateSectionInPayload(updated);
+    } catch (patchError) {
+      updateSectionInPayload(previousSection);
+      setActionError(
+        patchError instanceof Error
+          ? patchError.message
+          : 'Failed to link references for this section. Please retry.',
+      );
+    } finally {
+      setLinkingSectionId(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -508,6 +681,23 @@ export default function ReviewPage() {
           ) : (
             <span className="review-status-pill review-status-pill--done">All sections ready</span>
           )}
+          {referenceData.options.length > 0 ? (
+            <label className="reference-style-picker" htmlFor="reference-style-select">
+              <span>Reference style</span>
+              <select
+                id="reference-style-select"
+                className="field-select"
+                value={referenceStyle}
+                onChange={(event) => setReferenceStyle(event.target.value as ReferenceStyle)}
+              >
+                {REFERENCE_STYLES.map((styleOption) => (
+                  <option key={styleOption.value} value={styleOption.value}>
+                    {styleOption.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <button
             type="button"
             className="primary-button review-export-button"
@@ -589,6 +779,13 @@ export default function ReviewPage() {
               instructionText={instructionBySectionId[activeSection.id] ?? ''}
               isApplyingInstruction={applyingSectionId === activeSection.id}
               instructionError={instructionError}
+              referenceOptions={referenceData.options}
+              linkedReferencePositions={activeSectionLinkedPositions}
+              isUpdatingReferenceLinks={linkingSectionId === activeSection.id}
+              canLinkReferences={
+                referenceData.options.length > 0 &&
+                !referenceData.referenceSectionIdSet.has(activeSection.id)
+              }
               onEditedTextChange={(nextValue) => {
                 setEditedTextBySectionId((current) => ({
                   ...current,
@@ -608,6 +805,7 @@ export default function ReviewPage() {
                 setInstructionError(null);
               }}
               onApplyInstruction={handleApplyInstruction}
+              onLinkedReferencePositionsChange={handleLinkedReferencesChange}
               onAccept={handleAccept}
               onReject={handleReject}
             />

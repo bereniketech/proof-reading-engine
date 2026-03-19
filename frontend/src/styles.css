@@ -373,6 +373,20 @@ p {
   flex-shrink: 0;
 }
 
+.reference-style-picker {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 10rem;
+}
+
+.reference-style-picker span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #3566ad;
+}
+
 .review-export-button {
   min-width: 9.75rem;
   display: inline-flex;
@@ -705,6 +719,39 @@ p {
 
 .instruction-input:disabled {
   opacity: 0.5;
+}
+
+.reference-link-list {
+  max-height: 240px;
+  overflow-y: auto;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.reference-link-item {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 0.5rem;
+  align-items: start;
+  border: 1px solid #dce9f9;
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.6rem;
+  background: #fbfdff;
+}
+
+.reference-link-number {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #24518f;
+  line-height: 1.35;
+  padding-top: 0.1rem;
+}
+
+.reference-link-text {
+  font-size: 0.84rem;
+  color: #334b6d;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .section-actions {

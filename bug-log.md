@@ -1,3 +1,9 @@
+## [2026-03-19] Likert-scale items incorrectly split as headings in PDF parser
+- **What broke:** In the Maternal Fatigue sample PDF, the MFS-ASD section's 5-point Likert scale items (`1 – Strongly Disagree`, `2 – Disagree`, etc.) were each split out as separate heading sections instead of remaining part of their parent paragraph.
+- **Root cause:** `isLikelyHeading` in `pdf.ts` used the regex `/^\d+(\.\d+)*\s+[^\s].{0,90}$/` which matches any line beginning with a digit, whitespace, and any non-space character — including em-dash list items.
+- **Fix applied:** Changed `[^\s]` to `[A-Z]` so only lines whose text (after the number) starts with an uppercase letter are treated as numbered headings.
+- **Affected file(s):** backend/src/parsers/pdf.ts
+
 ## [2026-03-16] Upload route stability and error-safety fixes
 - **What broke:** Upload flow could leak temporary files on backend failures, classify client validation errors as server errors, and expose internal error details; health route was unintentionally auth-protected.
 - **Root cause:** Missing cleanup on some early-return/failure paths, generic error handling that did not separate upload validation failures, and middleware order putting `/api/health` behind JWT auth.

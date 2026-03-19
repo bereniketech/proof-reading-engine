@@ -16,7 +16,7 @@ function isLikelyHeading(text: string): boolean {
     return true;
   }
 
-  return /^\d+(\.\d+)*\s+[^\s].{0,90}$/.test(text);
+  return /^\d+(\.\d+)*\s+[A-Z].{0,90}$/.test(text);
 }
 
 export async function parsePdf(filePath: string): Promise<Section[]> {

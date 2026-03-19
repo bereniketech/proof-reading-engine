@@ -12,6 +12,7 @@ interface AuthenticatedUser {
 interface UpdateSectionBody {
   status?: SectionStatus;
   final_text?: string;
+  reference_text?: string;
 }
 
 const sectionStatuses = new Set<SectionStatus>(['pending', 'ready', 'accepted', 'rejected']);
@@ -97,8 +98,9 @@ function parseUpdateSectionBody(body: unknown): UpdateSectionBody | null {
   const candidate = body as Partial<UpdateSectionBody>;
   const hasStatus = Object.hasOwn(candidate, 'status');
   const hasFinalText = Object.hasOwn(candidate, 'final_text');
+  const hasReferenceText = Object.hasOwn(candidate, 'reference_text');
 
-  if (!hasStatus && !hasFinalText) {
+  if (!hasStatus && !hasFinalText && !hasReferenceText) {
     return null;
   }
 
@@ -116,9 +118,22 @@ function parseUpdateSectionBody(body: unknown): UpdateSectionBody | null {
     }
   }
 
+  if (hasReferenceText) {
+    if (typeof candidate.reference_text !== 'string') {
+      return null;
+    }
+
+    if (candidate.reference_text.length > 100_000) {
+      return null;
+    }
+  }
+
   return {
     ...(candidate.status ? { status: candidate.status } : {}),
     ...(typeof candidate.final_text === 'string' ? { final_text: candidate.final_text } : {}),
+    ...(typeof candidate.reference_text === 'string'
+      ? { reference_text: candidate.reference_text }
+      : {}),
   };
 }
 
@@ -283,7 +298,7 @@ router.patch('/sections/:id', async (req: Request, res: Response) => {
   if (!parsedBody) {
     badRequest(
       res,
-      'Invalid payload. Provide at least one field: status {pending, ready, accepted, rejected} or final_text string (<=100000 chars).',
+      'Invalid payload. Provide at least one field: status {pending, ready, accepted, rejected}, final_text string (<=100000 chars), or reference_text string (<=100000 chars).',
     );
     return;
   }
@@ -291,6 +306,9 @@ router.patch('/sections/:id', async (req: Request, res: Response) => {
   const updatePayload = {
     ...(parsedBody.status ? { status: parsedBody.status } : {}),
     ...(Object.hasOwn(parsedBody, 'final_text') ? { final_text: parsedBody.final_text } : {}),
+    ...(Object.hasOwn(parsedBody, 'reference_text')
+      ? { reference_text: parsedBody.reference_text }
+      : {}),
   };
 
   const supabase = createUserScopedSupabaseClient(authToken);
@@ -359,7 +377,7 @@ router.post('/sections/:id/instruct', async (req: Request, res: Response) => {
   const { data: section, error: fetchError } = await supabase
     .from('sections')
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
     )
     .eq('id', sectionId)
     .maybeSingle();
@@ -403,7 +421,7 @@ router.post('/sections/:id/instruct', async (req: Request, res: Response) => {
     })
     .eq('id', sectionId)
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
     )
     .maybeSingle();
 

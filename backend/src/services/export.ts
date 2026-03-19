@@ -8,6 +8,18 @@ import { createAdminSupabaseClient } from '../lib/supabase.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Works from both src/services/ (dev/tsx) and dist/services/ (prod build)
 const FONT_DIR = path.resolve(__dirname, '../../fonts');
+const REFERENCE_HEADING_TEXTS = new Set(['references', 'bibliography', 'works cited']);
+
+type ReferenceStyle = 'apa' | 'mla' | 'chicago' | 'ieee' | 'vancouver';
+
+interface ExportOptions {
+  referenceStyle?: ReferenceStyle;
+}
+
+interface ReferenceSection {
+  position: number;
+  text: string;
+}
 
 interface Section {
   id: string;
@@ -33,6 +45,141 @@ interface Session {
   status: string;
   created_at: string;
   updated_at: string;
+}
+
+function normalizeText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function getSectionText(section: Section): string {
+  const textToUse =
+    section.status === 'rejected'
+      ? section.original_text
+      : section.final_text || section.corrected_text || section.original_text;
+
+  return textToUse.trim();
+}
+
+function findReferencesHeadingIndex(sections: Section[]): number {
+  return sections.findIndex((section) => {
+    if (section.section_type !== 'heading') {
+      return false;
+    }
+
+    return REFERENCE_HEADING_TEXTS.has(normalizeText(getSectionText(section)));
+  });
+}
+
+function extractReferenceSections(sections: Section[]): { headingPosition: number | null; entries: ReferenceSection[] } {
+  const headingIndex = findReferencesHeadingIndex(sections);
+  if (headingIndex < 0) {
+    return {
+      headingPosition: null,
+      entries: [],
+    };
+  }
+
+  const heading = sections[headingIndex];
+  if (!heading) {
+    return {
+      headingPosition: null,
+      entries: [],
+    };
+  }
+
+  const entries: ReferenceSection[] = [];
+
+  for (let i = headingIndex + 1; i < sections.length; i += 1) {
+    const section = sections[i];
+    if (!section) {
+      continue;
+    }
+
+    if (section.section_type === 'heading') {
+      break;
+    }
+
+    const text = getSectionText(section);
+    if (!text) {
+      continue;
+    }
+
+    entries.push({
+      position: section.position,
+      text,
+    });
+  }
+
+  return {
+    headingPosition: heading.position,
+    entries,
+  };
+}
+
+function parseLinkedReferencePositions(referenceText: string | null): number[] {
+  if (!referenceText) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(referenceText) as { linked_reference_positions?: unknown };
+    if (!Array.isArray(parsed.linked_reference_positions)) {
+      return [];
+    }
+
+    const uniquePositions = new Set<number>();
+    for (const rawPosition of parsed.linked_reference_positions) {
+      if (typeof rawPosition !== 'number' || !Number.isFinite(rawPosition)) {
+        continue;
+      }
+
+      uniquePositions.add(Math.trunc(rawPosition));
+    }
+
+    return Array.from(uniquePositions.values());
+  } catch {
+    return [];
+  }
+}
+
+function buildReferenceOrdinalLookup(entries: ReferenceSection[]): Map<number, number> {
+  const lookup = new Map<number, number>();
+
+  entries.forEach((entry, index) => {
+    lookup.set(entry.position, index + 1);
+  });
+
+  return lookup;
+}
+
+function createCitationSuffix(referenceStyle: ReferenceStyle, ordinals: number[]): string {
+  if (ordinals.length === 0) {
+    return '';
+  }
+
+  const sortedUnique = Array.from(new Set(ordinals)).sort((a, b) => a - b);
+
+  if (referenceStyle === 'ieee') {
+    return sortedUnique.map((ordinal) => `[${ordinal}]`).join(' ');
+  }
+
+  if (referenceStyle === 'vancouver') {
+    return `(${sortedUnique.join(', ')})`;
+  }
+
+  return `(${sortedUnique.map((ordinal) => `Ref ${ordinal}`).join('; ')})`;
+}
+
+function formatReferenceEntry(referenceStyle: ReferenceStyle, ordinal: number, text: string): string {
+  if (referenceStyle === 'ieee') {
+    return `[${ordinal}] ${text}`;
+  }
+
+  if (referenceStyle === 'vancouver') {
+    return `${ordinal}. ${text}`;
+  }
+
+  return `${ordinal}. ${text}`;
 }
 
 async function getSessionWithSections(
@@ -87,10 +234,11 @@ async function loadFontBytes(filename: string): Promise<Uint8Array> {
   return readFile(path.join(FONT_DIR, filename));
 }
 
-async function generatePdfBuffer(_session: Session, sections: Section[]): Promise<Buffer> {
+async function generatePdfBuffer(_session: Session, sections: Section[], options: ExportOptions): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
   let page = pdfDoc.addPage([612, 792]); // Standard 8.5" x 11" letter
+  const referenceStyle = options.referenceStyle ?? 'apa';
 
   const margins = { top: 72, bottom: 72, left: 72, right: 72 }; // 1" margins
   const pageWidth = 612 - margins.left - margins.right;
@@ -113,6 +261,12 @@ async function generatePdfBuffer(_session: Session, sections: Section[]): Promis
 
   // Use the same Unicode font for headings; differentiate by size only
   boldFont = font;
+
+  const extractedReferences = extractReferenceSections(sections);
+  const referenceEntries = extractedReferences.entries;
+  const referenceOrdinalLookup = buildReferenceOrdinalLookup(referenceEntries);
+  const referencePositions = new Set(referenceEntries.map((entry) => entry.position));
+  const referencesHeadingPosition = extractedReferences.headingPosition;
 
   function getWrappedLines(text: string, fontSize: number, maxWidth: number): string[] {
     const words = text.split(' ');
@@ -146,14 +300,33 @@ async function generatePdfBuffer(_session: Session, sections: Section[]): Promis
   }
 
   for (const section of sections) {
-    const textToUse = section.status === 'rejected' ? section.original_text : section.final_text || section.corrected_text || section.original_text;
+    if (referencesHeadingPosition !== null && section.position === referencesHeadingPosition) {
+      continue;
+    }
+
+    if (referencePositions.has(section.position)) {
+      continue;
+    }
+
+    const textToUse = getSectionText(section);
 
     let content: { type: 'heading' | 'paragraph'; text: string }[] = [];
 
     if (section.section_type === 'heading' && section.heading_level !== null) {
       content.push({ type: 'heading', text: textToUse });
     } else if (textToUse) {
-      content.push({ type: 'paragraph', text: textToUse });
+      let paragraphText = textToUse;
+      const linkedPositions = parseLinkedReferencePositions(section.reference_text);
+      const linkedOrdinals = linkedPositions
+        .map((position) => referenceOrdinalLookup.get(position))
+        .filter((ordinal): ordinal is number => typeof ordinal === 'number');
+      const citationSuffix = createCitationSuffix(referenceStyle, linkedOrdinals);
+
+      if (citationSuffix.length > 0) {
+        paragraphText = `${paragraphText} ${citationSuffix}`;
+      }
+
+      content.push({ type: 'paragraph', text: paragraphText });
     }
 
     for (const item of content) {
@@ -197,10 +370,59 @@ async function generatePdfBuffer(_session: Session, sections: Section[]): Promis
     }
   }
 
+  if (referenceEntries.length > 0) {
+    const headingText = 'References';
+    const headingFontSize = 14;
+    const headingLines = getWrappedLines(headingText, headingFontSize, pageWidth);
+    const headingHeight = headingLines.length * headingFontSize * lineHeight + paragraphSpacing;
+
+    checkPageBreak(headingHeight);
+
+    for (const line of headingLines) {
+      page.drawText(line, {
+        x: margins.left,
+        y: 792 - currentY - headingFontSize,
+        size: headingFontSize,
+        font: boldFont,
+        color: rgb(0, 0, 0),
+      });
+      currentY += headingFontSize * lineHeight;
+    }
+
+    currentY += paragraphSpacing;
+
+    for (const entry of referenceEntries) {
+      const ordinal = referenceOrdinalLookup.get(entry.position);
+      if (!ordinal) {
+        continue;
+      }
+
+      const formattedEntry = formatReferenceEntry(referenceStyle, ordinal, entry.text);
+      const fontSize = 10;
+      const lines = getWrappedLines(formattedEntry, fontSize, pageWidth);
+      const estimatedHeight = lines.length * fontSize * lineHeight + 8;
+
+      checkPageBreak(estimatedHeight);
+
+      for (const line of lines) {
+        page.drawText(line, {
+          x: margins.left,
+          y: 792 - currentY - fontSize,
+          size: fontSize,
+          font,
+          color: rgb(0, 0, 0),
+        });
+        currentY += fontSize * lineHeight;
+      }
+
+      currentY += 8;
+    }
+  }
+
   return Buffer.from(await pdfDoc.save());
 }
 
-async function exportSession(sessionId: string): Promise<Buffer> {
+async function exportSession(sessionId: string, options: ExportOptions = {}): Promise<Buffer> {
   const data = await getSessionWithSections(sessionId);
 
   if (!data) {
@@ -212,9 +434,9 @@ async function exportSession(sessionId: string): Promise<Buffer> {
     throw new Error(validation.error || 'Invalid export state');
   }
 
-  const buffer = await generatePdfBuffer(data.session, data.sections);
+  const buffer = await generatePdfBuffer(data.session, data.sections, options);
   return buffer;
 }
 
 export { exportSession };
-export type { Session, Section };
+export type { Session, Section, ReferenceStyle, ExportOptions };

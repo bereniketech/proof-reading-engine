@@ -8,8 +8,14 @@ export interface SectionCardSection {
   section_type: string;
   original_text: string;
   corrected_text: string | null;
+  reference_text: string | null;
   change_summary: string | null;
   status: SectionStatus;
+}
+
+interface ReferenceOption {
+  position: number;
+  text: string;
 }
 
 type DiffType = 'same' | 'added' | 'removed';
@@ -27,9 +33,14 @@ interface SectionCardProps {
   readonly instructionText: string;
   readonly isApplyingInstruction: boolean;
   readonly instructionError: string | null;
+  readonly referenceOptions: ReferenceOption[];
+  readonly linkedReferencePositions: number[];
+  readonly isUpdatingReferenceLinks: boolean;
+  readonly canLinkReferences: boolean;
   readonly onEditedTextChange: (nextValue: string) => void;
   readonly onInstructionTextChange: (value: string) => void;
   readonly onApplyInstruction: () => Promise<void>;
+  readonly onLinkedReferencePositionsChange: (positions: number[]) => Promise<void>;
   readonly onAccept: () => Promise<void>;
   readonly onReject: () => Promise<void>;
 }
@@ -133,9 +144,14 @@ export function SectionCard({
   instructionText,
   isApplyingInstruction,
   instructionError,
+  referenceOptions,
+  linkedReferencePositions,
+  isUpdatingReferenceLinks,
+  canLinkReferences,
   onEditedTextChange,
   onInstructionTextChange,
   onApplyInstruction,
+  onLinkedReferencePositionsChange,
   onAccept,
   onReject,
 }: SectionCardProps) {
@@ -148,6 +164,10 @@ export function SectionCard({
 
   const hasSummary = section.change_summary !== null && section.change_summary.length > 0;
   const isPending = section.status === 'pending' && section.corrected_text === null;
+  const linkedPositionSet = useMemo(
+    () => new Set(linkedReferencePositions),
+    [linkedReferencePositions],
+  );
 
   return (
     <div className="section-card">
@@ -239,6 +259,45 @@ export function SectionCard({
           </p>
         ) : null}
       </div>
+
+      {referenceOptions.length > 0 && canLinkReferences ? (
+        <div className="section-block">
+          <h2 className="section-block-label">Link references to this section</h2>
+          <p className="section-block-content section-block-content--summary">
+            Linked references will be cited in this section when exporting PDF.
+          </p>
+          <div className="reference-link-list" role="group" aria-label="Reference links">
+            {referenceOptions.map((referenceOption) => {
+              const checked = linkedPositionSet.has(referenceOption.position);
+
+              return (
+                <label
+                  key={referenceOption.position}
+                  className="reference-link-item"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={isPending || isUpdatingReferenceLinks}
+                    onChange={(event) => {
+                      const nextSet = new Set(linkedPositionSet);
+                      if (event.target.checked) {
+                        nextSet.add(referenceOption.position);
+                      } else {
+                        nextSet.delete(referenceOption.position);
+                      }
+
+                      void onLinkedReferencePositionsChange(Array.from(nextSet.values()).sort((a, b) => a - b));
+                    }}
+                  />
+                  <span className="reference-link-number">Ref {referenceOption.position + 1}</span>
+                  <span className="reference-link-text">{referenceOption.text}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       <div className="section-actions">
         <button

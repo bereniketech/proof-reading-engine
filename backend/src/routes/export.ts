@@ -1,6 +1,6 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
-import { exportSession } from '../services/export.js';
+import { exportSession, type ReferenceStyle } from '../services/export.js';
 
 interface AuthenticatedUser {
   id: string;
@@ -10,6 +10,31 @@ const uuidV4LikePattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const router = Router();
+const allowedReferenceStyles = new Set<ReferenceStyle>([
+  'apa',
+  'mla',
+  'chicago',
+  'ieee',
+  'vancouver',
+]);
+
+function parseReferenceStyleFromBody(body: unknown): ReferenceStyle {
+  if (!body || typeof body !== 'object') {
+    return 'apa';
+  }
+
+  const candidate = body as { reference_style?: unknown };
+  if (typeof candidate.reference_style !== 'string') {
+    return 'apa';
+  }
+
+  const normalized = candidate.reference_style.trim().toLowerCase() as ReferenceStyle;
+  if (!allowedReferenceStyles.has(normalized)) {
+    return 'apa';
+  }
+
+  return normalized;
+}
 
 function isUuid(value: string): boolean {
   return uuidV4LikePattern.test(value);
@@ -69,8 +94,10 @@ router.post('/export/:sessionId', async (req: Request, res: Response) => {
     return;
   }
 
+  const referenceStyle = parseReferenceStyleFromBody(req.body);
+
   try {
-    const pdfBuffer = await exportSession(sessionId);
+    const pdfBuffer = await exportSession(sessionId, { referenceStyle });
 
     // Set response headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
