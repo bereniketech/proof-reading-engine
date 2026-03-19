@@ -1,5 +1,13 @@
-import { PDFDocument, rgb } from 'pdf-lib';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fontkit from '@pdf-lib/fontkit';
+import { PDFDocument, rgb, type PDFFont } from 'pdf-lib';
 import { createAdminSupabaseClient } from '../lib/supabase.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Works from both src/services/ (dev/tsx) and dist/services/ (prod build)
+const FONT_DIR = path.resolve(__dirname, '../../fonts');
 
 interface Section {
   id: string;
@@ -75,8 +83,13 @@ function validateExportReadiness(sections: Section[]): { valid: boolean; error?:
   return { valid: true };
 }
 
+async function loadFontBytes(filename: string): Promise<Uint8Array> {
+  return readFile(path.join(FONT_DIR, filename));
+}
+
 async function generatePdfBuffer(_session: Session, sections: Section[]): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
   let page = pdfDoc.addPage([612, 792]); // Standard 8.5" x 11" letter
 
   const margins = { top: 72, bottom: 72, left: 72, right: 72 }; // 1" margins
@@ -87,8 +100,19 @@ async function generatePdfBuffer(_session: Session, sections: Section[]): Promis
 
   let currentY = margins.top;
 
-  const font = await pdfDoc.embedFont('Helvetica');
-  const boldFont = await pdfDoc.embedFont('Helvetica-Bold');
+  let font: PDFFont;
+  let boldFont: PDFFont;
+
+  try {
+    const regularBytes = await loadFontBytes('NotoSans-Regular.ttf');
+    font = await pdfDoc.embedFont(regularBytes);
+  } catch {
+    // Fallback to built-in font if bundled font unavailable (Latin-only)
+    font = await pdfDoc.embedFont('Helvetica');
+  }
+
+  // Use the same Unicode font for headings; differentiate by size only
+  boldFont = font;
 
   function getWrappedLines(text: string, fontSize: number, maxWidth: number): string[] {
     const words = text.split(' ');
