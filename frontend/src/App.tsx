@@ -16,7 +16,7 @@ interface UploadErrorResponse {
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = ['docx', 'pdf', 'txt'] as const;
-const apiBaseUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) ?? 'http://localhost:3001';
+const apiBaseUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:3001';
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) {

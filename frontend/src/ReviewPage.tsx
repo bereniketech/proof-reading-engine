@@ -59,7 +59,7 @@ interface ExportErrorResponse {
   error?: string;
 }
 
-const apiBaseUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) ?? 'http://localhost:3001';
+const apiBaseUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:3001';
 const POLL_INTERVAL_MS = 2000;
 
 const STATUS_LABELS: Record<SectionStatus, string> = {
