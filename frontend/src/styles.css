@@ -101,9 +101,26 @@ p {
   font: inherit;
 }
 
-.field input:focus-visible {
+.field input:focus-visible,
+.field select:focus-visible {
   outline: 2px solid #2f6ebe;
   outline-offset: 1px;
+}
+
+.field-select {
+  width: 100%;
+  border: 1px solid #b8cff2;
+  border-radius: 0.6rem;
+  padding: 0.7rem 0.75rem;
+  font: inherit;
+  color: #1c2534;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.field-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .primary-button {

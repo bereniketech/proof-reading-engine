@@ -13,6 +13,15 @@ interface UploadErrorResponse {
   error?: string;
 }
 
+const DOCUMENT_TYPES = [
+  { value: 'general', label: 'General' },
+  { value: 'medical_journal', label: 'Medical Journal' },
+  { value: 'legal_document', label: 'Legal Document' },
+  { value: 'academic_paper', label: 'Academic Paper' },
+  { value: 'business_report', label: 'Business Report' },
+  { value: 'creative_writing', label: 'Creative Writing' },
+] as const;
+
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const ACCEPTED_EXTENSIONS = ['docx', 'pdf', 'txt'] as const;
 const apiBaseUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:3001';
@@ -65,6 +74,7 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [documentType, setDocumentType] = useState('general');
   const [mainFile, setMainFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -223,6 +233,7 @@ function App() {
     try {
       const formData = new FormData();
       formData.append('file', mainFile);
+      formData.append('document_type', documentType);
 
       const responsePayload = await new Promise<UploadSuccessResponse>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -317,6 +328,22 @@ function App() {
                 ) : null}
               </label>
             </div>
+
+            <label className="field">
+              <span>Document Type</span>
+              <select
+                className="field-select"
+                value={documentType}
+                onChange={(event) => setDocumentType(event.target.value)}
+                disabled={isUploading}
+              >
+                {DOCUMENT_TYPES.map((dt) => (
+                  <option key={dt.value} value={dt.value}>
+                    {dt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <button className="primary-button" type="button" disabled={!canUpload} onClick={handleUpload}>
               {isUploading ? 'Uploading...' : 'Start Proofreading'}

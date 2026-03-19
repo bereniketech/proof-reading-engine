@@ -5,13 +5,63 @@ const OPENAI_TIMEOUT_MS = 20_000;
 const MAX_RETRY_ATTEMPTS = 1;
 const RETRY_DELAY_MS = 1_000;
 
-const SYSTEM_PROMPT = [
-  'You are a professional proofreader.',
-  'Fix grammar, spelling, punctuation, style, and clarity.',
-  'Preserve the original meaning, tone, and structure.',
-  'Return valid JSON only with this exact shape:',
-  '{"corrected_text": string, "change_summary": string}',
-].join(' ');
+export type DocumentType =
+  | 'general'
+  | 'medical_journal'
+  | 'legal_document'
+  | 'academic_paper'
+  | 'business_report'
+  | 'creative_writing';
+
+const JSON_INSTRUCTION = 'Return valid JSON only with this exact shape: {"corrected_text": string, "change_summary": string}';
+
+const DOCUMENT_TYPE_SYSTEM_PROMPTS: Record<DocumentType, string> = {
+  general: [
+    'You are a professional proofreader.',
+    'Fix grammar, spelling, punctuation, style, and clarity.',
+    'Preserve the original meaning, tone, and structure.',
+    JSON_INSTRUCTION,
+  ].join(' '),
+  medical_journal: [
+    'You are an experienced peer reviewer for medical journals.',
+    'Follow ICMJE guidelines and AMA Manual of Style.',
+    'Preserve medical terminology, drug names, and dosages exactly.',
+    'Fix grammar, punctuation, and clarity while maintaining scientific precision.',
+    'Flag ambiguous clinical claims without altering their meaning.',
+    JSON_INSTRUCTION,
+  ].join(' '),
+  legal_document: [
+    'You are a legal editor specializing in contracts and regulatory documents.',
+    'Preserve defined terms (capitalized terms with specific legal meaning) exactly.',
+    'Maintain clause and section numbering intact.',
+    'Fix grammar, punctuation, and readability without altering legal meaning.',
+    'Do not rephrase operative language (shall, must, may) or change party references.',
+    JSON_INSTRUCTION,
+  ].join(' '),
+  academic_paper: [
+    'You are an academic editor familiar with APA, Chicago, and MLA style guides.',
+    'Fix grammar, punctuation, clarity, and academic tone.',
+    'Preserve citation markers, reference numbers, and technical terminology.',
+    'Ensure formal register and logical flow between sentences.',
+    JSON_INSTRUCTION,
+  ].join(' '),
+  business_report: [
+    'You are a business editor focused on clarity and professional tone.',
+    'Fix grammar, punctuation, and readability.',
+    'Prefer active voice and concise phrasing.',
+    'Preserve financial figures, KPIs, and proper nouns exactly.',
+    JSON_INSTRUCTION,
+  ].join(' '),
+  creative_writing: [
+    'You are a literary editor with a light editorial touch.',
+    "Preserve the author's voice, stylistic choices, and intentional rule-breaking.",
+    'Fix only clear grammatical errors, typos, and punctuation mistakes.',
+    'Do not flatten distinctive prose style or impose formal register.',
+    JSON_INSTRUCTION,
+  ].join(' '),
+};
+
+const SYSTEM_PROMPT = DOCUMENT_TYPE_SYSTEM_PROMPTS.general;
 
 const INSTRUCTION_SYSTEM_PROMPT = [
   'You are a professional editor.',
@@ -25,6 +75,7 @@ export interface ProofreadSectionInput {
   originalText: string;
   sectionType?: 'heading' | 'paragraph';
   headingLevel?: number | null;
+  documentType?: DocumentType;
 }
 
 export interface ProofreadResult {
@@ -118,6 +169,8 @@ async function runSingleOpenAIProofread(section: ProofreadSectionInput): Promise
     controller.abort();
   }, OPENAI_TIMEOUT_MS);
 
+  const systemPrompt = DOCUMENT_TYPE_SYSTEM_PROMPTS[section.documentType ?? 'general'] ?? SYSTEM_PROMPT;
+
   try {
     const completion = await client.chat.completions.create(
       {
@@ -129,7 +182,7 @@ async function runSingleOpenAIProofread(section: ProofreadSectionInput): Promise
         messages: [
           {
             role: 'system',
-            content: SYSTEM_PROMPT,
+            content: systemPrompt,
           },
           {
             role: 'user',

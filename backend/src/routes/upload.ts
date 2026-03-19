@@ -21,6 +21,14 @@ interface StoredUpload {
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 const MAX_CONCURRENT_PARSE_JOBS = 4;
+const VALID_DOCUMENT_TYPES = new Set([
+  'general',
+  'medical_journal',
+  'legal_document',
+  'academic_paper',
+  'business_report',
+  'creative_writing',
+]);
 const PROOFREAD_MAX_ATTEMPTS = 2;
 const PROOFREAD_RETRY_DELAY_MS = 1_000;
 const uploadDirectory = path.resolve('uploads');
@@ -253,7 +261,7 @@ async function delay(milliseconds: number): Promise<void> {
   });
 }
 
-async function triggerProofreadingWithRetry(input: { sessionId: string; accessToken: string }): Promise<void> {
+async function triggerProofreadingWithRetry(input: { sessionId: string; accessToken: string; documentType?: string }): Promise<void> {
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= PROOFREAD_MAX_ATTEMPTS; attempt += 1) {
@@ -261,6 +269,7 @@ async function triggerProofreadingWithRetry(input: { sessionId: string; accessTo
       await runProofreadingOrchestrator({
         sessionId: input.sessionId,
         accessToken: input.accessToken,
+        documentType: input.documentType,
       });
       return;
     } catch (error: unknown) {
@@ -313,6 +322,9 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
     });
     return;
   }
+
+  const rawDocumentType = typeof req.body?.document_type === 'string' ? req.body.document_type : 'general';
+  const documentType = VALID_DOCUMENT_TYPES.has(rawDocumentType) ? rawDocumentType : 'general';
 
   const uploadedFiles = req.files as Record<string, Express.Multer.File[]> | undefined;
   const mainFile = asStoredUpload(uploadedFiles?.file?.[0]);
@@ -367,6 +379,7 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
         filename: mainFile.originalName,
         file_type: fileType,
         status: 'parsing',
+        document_type: documentType,
       })
       .select('id, status')
       .single();
@@ -442,6 +455,7 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
     void triggerProofreadingWithRetry({
       sessionId: data.id,
       accessToken: authToken,
+      documentType,
     });
 
     res.status(201).json({

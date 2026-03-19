@@ -37,6 +37,7 @@ export interface RunProofreadingOrchestratorInput {
   sessionId: string;
   accessToken: string;
   maxConcurrency?: number;
+  documentType?: string;
 }
 
 export interface RunProofreadingOrchestratorOptions {
@@ -140,7 +141,7 @@ function createSupabaseProofreaderRepository(accessToken: string): ProofreaderRe
   };
 }
 
-function createDefaultDependencies(accessToken: string): ProofreaderDependencies {
+function createDefaultDependencies(accessToken: string, documentType?: string): ProofreaderDependencies {
   return {
     repository: createSupabaseProofreaderRepository(accessToken),
     proofreadWithOpenAI: async (section: SessionSectionRecord): Promise<ProofreadResult> =>
@@ -148,6 +149,7 @@ function createDefaultDependencies(accessToken: string): ProofreaderDependencies
         originalText: section.original_text,
         sectionType: section.section_type,
         headingLevel: section.heading_level,
+        documentType: documentType as import('./openai.js').DocumentType | undefined,
       }),
     proofreadWithLanguageTool: async (section: SessionSectionRecord): Promise<ProofreadResult> =>
       proofreadSectionWithLanguageTool({
@@ -200,7 +202,7 @@ export async function runProofreadingOrchestrator(
     throw new Error('sessionId and accessToken are required to run proofreading orchestrator');
   }
 
-  const dependencies = options.dependencies ?? createDefaultDependencies(input.accessToken);
+  const dependencies = options.dependencies ?? createDefaultDependencies(input.accessToken, input.documentType);
   const concurrencyLimit = normalizeConcurrencyLimit(input.maxConcurrency);
   const sections = await dependencies.repository.getPendingSections(input.sessionId);
 
