@@ -1,0 +1,19 @@
+# Sample/test files
+samples/
+
+# Intermediates
+.tmp/
+
+# Uploads
+uploads/
+
+# Spec and planning docs
+.spec/
+plans/
+
+# Bug log
+bug-log.md
+
+# IDE
+.vscode/
+.idea/

@@ -29,3 +29,6 @@ build/
 
 # Uploads (runtime files — not committed)
 uploads/
+
+# Sample files (local testing only)
+samples/
