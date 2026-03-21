@@ -145,12 +145,14 @@ function getReferencesHeadingIndex(sections: SectionRecord[]): number {
 function deriveReferenceData(sections: SectionRecord[]): {
   options: ReferenceOption[];
   referenceSectionIdSet: Set<string>;
+  referencesHeadingSectionId: string | null;
 } {
   const headingIndex = getReferencesHeadingIndex(sections);
   if (headingIndex < 0) {
     return {
       options: [],
       referenceSectionIdSet: new Set<string>(),
+      referencesHeadingSectionId: null,
     };
   }
 
@@ -187,6 +189,7 @@ function deriveReferenceData(sections: SectionRecord[]): {
   return {
     options,
     referenceSectionIdSet,
+    referencesHeadingSectionId: headingSection?.id ?? null,
   };
 }
 
@@ -854,6 +857,7 @@ export default function ReviewPage() {
       return {
         options: [] as ReferenceOption[],
         referenceSectionIdSet: new Set<string>(),
+        referencesHeadingSectionId: null as string | null,
       };
     }
 
@@ -1054,6 +1058,8 @@ export default function ReviewPage() {
                 referenceData.options.length > 0 &&
                 !referenceData.referenceSectionIdSet.has(activeSection.id)
               }
+              isReferenceSection={referenceData.referenceSectionIdSet.has(activeSection.id)}
+              hasReferencesSection={referenceData.options.length > 0}
               canMergeWithNext={
                 payload.sections.findIndex((s) => s.id === activeSection.id) <
                 payload.sections.length - 1

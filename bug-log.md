@@ -10,6 +10,12 @@
 - **Fix applied:** Added reference-link remapping after section insertions and merges so old linked positions are translated onto the new section order, with merged references redirected to the surviving section.
 - **Affected file(s):** backend/src/routes/sections.ts
 
+## [2026-03-19] AI instruction timed out on large reference sections
+- **What broke:** Applying an AI instruction like converting a long References section to APA format could fail with `Request was aborted.`
+- **Root cause:** Section-instruction requests used the same 20-second hard timeout as normal proofreading and had no retry path, which was too short for longer bibliography edits.
+- **Fix applied:** Increased the instruction timeout, added retry handling for retryable failures, and returned a clearer timeout message that suggests splitting oversized reference sections before retrying.
+- **Affected file(s):** backend/src/services/openai.ts, backend/src/services/openai.test.ts
+
 ## [2026-03-16] Upload route stability and error-safety fixes
 - **What broke:** Upload flow could leak temporary files on backend failures, classify client validation errors as server errors, and expose internal error details; health route was unintentionally auth-protected.
 - **Root cause:** Missing cleanup on some early-return/failure paths, generic error handling that did not separate upload validation failures, and middleware order putting `/api/health` behind JWT auth.

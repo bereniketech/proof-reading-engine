@@ -39,6 +39,8 @@ interface SectionCardProps {
   readonly linkedReferencePositions: number[];
   readonly isUpdatingReferenceLinks: boolean;
   readonly canLinkReferences: boolean;
+  readonly isReferenceSection: boolean;
+  readonly hasReferencesSection: boolean;
   readonly canMergeWithNext: boolean;
   readonly isMerging: boolean;
   readonly addSectionText: string;
@@ -171,6 +173,8 @@ export function SectionCard({
   linkedReferencePositions,
   isUpdatingReferenceLinks,
   canLinkReferences,
+  isReferenceSection,
+  hasReferencesSection,
   canMergeWithNext,
   isMerging,
   addSectionText,
@@ -306,11 +310,23 @@ export function SectionCard({
         ) : null}
       </div>
 
+      {hasReferencesSection && isReferenceSection ? (
+        <div className="section-block section-reference-guide">
+          <h2 className="section-block-label">Reference linking</h2>
+          <p className="section-block-content section-block-content--summary">
+            This section is inside the References block. To attach citations, open a body section and select the reference entries it cites there.
+          </p>
+        </div>
+      ) : null}
+
       {referenceOptions.length > 0 && canLinkReferences ? (
         <div className="section-block">
-          <h2 className="section-block-label">Link references to this section</h2>
+          <h2 className="section-block-label">Citations used in this section</h2>
           <p className="section-block-content section-block-content--summary">
-            Linked references will be cited in this section when exporting PDF.
+            Tick each reference entry cited here. The exported PDF will append citation markers for the selected references automatically.
+          </p>
+          <p className="section-reference-selected-count">
+            {linkedReferencePositions.length} reference{linkedReferencePositions.length === 1 ? '' : 's'} selected
           </p>
           <div className="reference-link-list" role="group" aria-label="Reference links">
             {referenceOptions.map((referenceOption) => {
@@ -342,6 +358,15 @@ export function SectionCard({
               );
             })}
           </div>
+        </div>
+      ) : null}
+
+      {!hasReferencesSection ? (
+        <div className="section-block section-reference-guide">
+          <h2 className="section-block-label">Reference linking</h2>
+          <p className="section-block-content section-block-content--summary">
+            Citation linking appears after the document contains a heading named References, Bibliography, or Works Cited.
+          </p>
         </div>
       ) : null}
 

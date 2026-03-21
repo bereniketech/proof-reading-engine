@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  applySectionInstruction,
   openAIServiceInternals,
   proofreadSectionWithOpenAI,
   type ProofreadResult,
@@ -95,5 +96,48 @@ describe('proofreadSectionWithOpenAI', () => {
     );
 
     assert.equal(attemptCount, 1);
+  });
+});
+
+describe('applySectionInstruction', () => {
+  it('retries once on retryable failure', async () => {
+    let attemptCount = 0;
+
+    const result = await applySectionInstruction('References text', 'Convert to APA format', {
+      maxRetryAttempts: 1,
+      retryDelayMs: 0,
+      runInstruction: async (): Promise<ProofreadResult> => {
+        attemptCount += 1;
+
+        if (attemptCount === 1) {
+          const abortedError = new Error('Request was aborted.') as Error & { name: string };
+          abortedError.name = 'AbortError';
+          throw abortedError;
+        }
+
+        return {
+          corrected_text: 'Formatted APA references.',
+          change_summary: 'Converted references to APA style.',
+        };
+      },
+    });
+
+    assert.equal(attemptCount, 2);
+    assert.equal(result.change_summary, 'Converted references to APA style.');
+  });
+
+  it('returns a helpful timeout message after retries are exhausted', async () => {
+    await assert.rejects(
+      applySectionInstruction('Long references text', 'Convert to APA format', {
+        maxRetryAttempts: 0,
+        retryDelayMs: 0,
+        runInstruction: async (): Promise<ProofreadResult> => {
+          const abortedError = new Error('Request was aborted.') as Error & { name: string };
+          abortedError.name = 'AbortError';
+          throw abortedError;
+        },
+      }),
+      /timed out on this section/,
+    );
   });
 });

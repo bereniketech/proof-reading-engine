@@ -2,7 +2,9 @@ import OpenAI from 'openai';
 
 const OPENAI_MODEL = 'gpt-4o';
 const OPENAI_TIMEOUT_MS = 20_000;
+const OPENAI_INSTRUCTION_TIMEOUT_MS = 60_000;
 const MAX_RETRY_ATTEMPTS = 1;
+const MAX_INSTRUCTION_RETRY_ATTEMPTS = 1;
 const RETRY_DELAY_MS = 1_000;
 
 export type DocumentType =
@@ -87,6 +89,12 @@ interface ProofreadOptions {
   maxRetryAttempts?: number;
   retryDelayMs?: number;
   runProofread?: (section: ProofreadSectionInput) => Promise<ProofreadResult>;
+}
+
+interface InstructionOptions {
+  maxRetryAttempts?: number;
+  retryDelayMs?: number;
+  runInstruction?: (sectionText: string, instruction: string) => Promise<ProofreadResult>;
 }
 
 let openAIClient: OpenAI | null = null;
@@ -202,6 +210,37 @@ async function runSingleOpenAIProofread(section: ProofreadSectionInput): Promise
   }
 }
 
+async function runSingleInstructionApplication(
+  sectionText: string,
+  instruction: string,
+): Promise<ProofreadResult> {
+  const client = getOpenAIClient();
+  const controller = new AbortController();
+  const timeoutHandle = setTimeout(() => {
+    controller.abort();
+  }, OPENAI_INSTRUCTION_TIMEOUT_MS);
+
+  try {
+    const completion = await client.chat.completions.create(
+      {
+        model: OPENAI_MODEL,
+        temperature: 0.2,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: INSTRUCTION_SYSTEM_PROMPT },
+          { role: 'user', content: `Section text:\n${sectionText}\n\nInstruction:\n${instruction}` },
+        ],
+      },
+      { signal: controller.signal },
+    );
+
+    const content = completion.choices[0]?.message?.content;
+    return parseProofreadResult(content);
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
+}
+
 export async function proofreadSectionWithOpenAI(
   section: ProofreadSectionInput,
   options: ProofreadOptions = {},
@@ -239,32 +278,38 @@ export async function proofreadSectionWithOpenAI(
 export async function applySectionInstruction(
   sectionText: string,
   instruction: string,
+  options: InstructionOptions = {},
 ): Promise<ProofreadResult> {
-  const client = getOpenAIClient();
-  const controller = new AbortController();
-  const timeoutHandle = setTimeout(() => {
-    controller.abort();
-  }, OPENAI_TIMEOUT_MS);
+  const maxRetryAttempts = options.maxRetryAttempts ?? MAX_INSTRUCTION_RETRY_ATTEMPTS;
+  const retryDelayMs = options.retryDelayMs ?? RETRY_DELAY_MS;
+  const runInstruction = options.runInstruction ?? runSingleInstructionApplication;
+  let lastError: unknown;
 
-  try {
-    const completion = await client.chat.completions.create(
-      {
-        model: OPENAI_MODEL,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: INSTRUCTION_SYSTEM_PROMPT },
-          { role: 'user', content: `Section text:\n${sectionText}\n\nInstruction:\n${instruction}` },
-        ],
-      },
-      { signal: controller.signal },
-    );
+  for (let attempt = 0; attempt <= maxRetryAttempts; attempt += 1) {
+    try {
+      return await runInstruction(sectionText, instruction);
+    } catch (error: unknown) {
+      lastError = error;
 
-    const content = completion.choices[0]?.message?.content;
-    return parseProofreadResult(content);
-  } finally {
-    clearTimeout(timeoutHandle);
+      if (attempt === maxRetryAttempts || !isRetryableOpenAIError(error)) {
+        break;
+      }
+
+      console.warn('Retrying OpenAI instruction after retryable failure', {
+        attempt: attempt + 1,
+      });
+      await delay(retryDelayMs);
+    }
   }
+
+  const detail = lastError instanceof Error ? lastError.message : 'Unknown error';
+  if (detail === 'Request was aborted.') {
+    throw new Error(
+      'AI instruction timed out on this section. Try splitting the references into smaller sections and retry.',
+    );
+  }
+
+  throw new Error(`AI instruction failed: ${detail}`);
 }
 
 export const openAIServiceInternals = {
