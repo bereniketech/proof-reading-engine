@@ -9,7 +9,7 @@ Layer 3 Tools: `tools/` — deterministic scripts. API keys in `.env`. Never sto
 Feature: editorial-intelligence-ui
 Spec: .spec/editorial-intelligence-ui/requirements.md, .spec/editorial-intelligence-ui/design.md
 Tasks: .spec/editorial-intelligence-ui/tasks/
-Current task: .spec/editorial-intelligence-ui/tasks/task-001.md
+Current task: .spec/editorial-intelligence-ui/tasks/task-002.md
 Branch: main
 
 ## Start Here
