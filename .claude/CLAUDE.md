@@ -5,6 +5,13 @@ Layer 1 Workflows: `workflows/` — SOPs defining objectives, inputs, tools, out
 Layer 2 Agent (you): read workflows, call tools in sequence, recover from errors.
 Layer 3 Tools: `tools/` — deterministic scripts. API keys in `.env`. Never store secrets elsewhere.
 
+## Active Feature
+Feature: editorial-intelligence-ui
+Spec: .spec/editorial-intelligence-ui/requirements.md, .spec/editorial-intelligence-ui/design.md
+Tasks: .spec/editorial-intelligence-ui/tasks/
+Current task: .spec/editorial-intelligence-ui/tasks/task-001.md
+Branch: main
+
 ## Start Here
 Read `.spec/plan.md` for project overview, then `.spec/requirements.md`, `.spec/design.md`, and `.spec/tasks.md` for full spec.
 Complete tasks in order. Mark each done before starting the next.
