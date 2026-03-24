@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Editorial Intelligence | Curator Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "secondary-fixed-dim": "#b9c7df",
+              "on-secondary-fixed": "#0d1c2e",
+              "on-error-container": "#93000a",
+              "surface-dim": "#d2d9f4",
+              "error": "#ba1a1a",
+              "surface": "#faf8ff",
+              "on-secondary-fixed-variant": "#3a485b",
+              "on-secondary-container": "#57657a",
+              "outline-variant": "#c5c5d4",
+              "primary": "#3a388b",
+              "on-tertiary-container": "#5debaf",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-fixed-variant": "#005236",
+              "on-primary-fixed-variant": "#3e3c8f",
+              "surface-container-high": "#e2e7ff",
+              "surface-container": "#eaedff",
+              "primary-fixed": "#e2dfff",
+              "on-error": "#ffffff",
+              "background": "#faf8ff",
+              "tertiary-fixed-dim": "#4edea3",
+              "surface-tint": "#5654a8",
+              "primary-container": "#5250a4",
+              "inverse-on-surface": "#eef0ff",
+              "on-primary-container": "#d0cdff",
+              "surface-container-low": "#f2f3ff",
+              "primary-fixed-dim": "#c3c0ff",
+              "on-tertiary-fixed": "#002113",
+              "on-background": "#131b2e",
+              "error-container": "#ffdad6",
+              "secondary": "#515f74",
+              "on-surface-variant": "#454652",
+              "inverse-primary": "#c3c0ff",
+              "on-tertiary": "#ffffff",
+              "on-surface": "#131b2e",
+              "tertiary-container": "#006846",
+              "surface-bright": "#faf8ff",
+              "outline": "#757684",
+              "secondary-fixed": "#d5e3fc",
+              "on-primary": "#ffffff",
+              "surface-variant": "#dae2fd",
+              "secondary-container": "#d5e3fc",
+              "on-secondary": "#ffffff",
+              "inverse-surface": "#283044",
+              "tertiary-fixed": "#6ffbbe",
+              "on-primary-fixed": "#100563",
+              "surface-container-highest": "#dae2fd",
+              "tertiary": "#004e33"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-fixed-dim selection:text-on-primary-fixed">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full w-64 bg-slate-100 dark:bg-slate-900 font-manrope text-xs uppercase tracking-widest no-border tonal-shift flat no shadows">
+<div class="p-6 flex flex-col items-start gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div>
+<h2 class="font-black text-indigo-800 dark:text-indigo-200 text-lg normal-case">Curator Pro</h2>
+<p class="text-slate-500 lowercase tracking-normal text-[10px]">Premium Tier</p>
+</div>
+</div>
+<nav class="flex flex-col h-full p-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:translate-x-1 transition-transform duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span>Documents</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-indigo-100/50 dark:bg-indigo-800/30 text-indigo-900 dark:text-indigo-100 font-semibold rounded-lg hover:translate-x-1 transition-transform duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span>AI Suggestions</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:translate-x-1 transition-transform duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span>Metrics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:translate-x-1 transition-transform duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>Library</span>
+</a>
+<div class="mt-auto pt-6 border-t border-slate-200 dark:border-slate-800 space-y-2">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-bold text-[10px] tracking-widest hover:bg-primary-container transition-colors">
+                        UPGRADE PLAN
+                    </button>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:translate-x-1 transition-transform duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Help</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:translate-x-1 transition-transform duration-200 cursor-pointer active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</a>
+</div>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-surface">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-8 py-3 h-16 bg-slate-50 dark:bg-slate-950 shadow-sm dark:shadow-none docked full-width top-0 z-10">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold italic text-indigo-900 dark:text-indigo-100 font-headline">Editorial Intelligence</span>
+<nav class="hidden lg:flex items-center gap-6 font-manrope text-sm font-medium tracking-tight">
+<a class="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors duration-200" href="#">Documents</a>
+<a class="text-indigo-700 dark:text-indigo-400 border-b-2 border-indigo-700 dark:border-indigo-400 pb-1 scale-98 active:opacity-80 transition-all" href="#">Editor</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors duration-200" href="#">Insights</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/20 transition-colors duration-200" href="#">Profile</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<input class="bg-surface-container-low border-none rounded-full px-4 py-1.5 text-sm w-48 focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Search insights..." type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-1.5 text-slate-400 text-sm" data-icon="search">search</span>
+</div>
+<button class="text-slate-500 hover:text-indigo-600 transition-colors"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button>
+<button class="text-slate-500 hover:text-indigo-600 transition-colors"><span class="material-symbols-outlined" data-icon="settings">settings</span></button>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full border border-slate-200" data-alt="Close-up portrait of a professional woman with a soft-focus office background, neutral lighting, high-end editorial style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaSmi_7y9b4b1SnY62Ga_vhfUNEWVz5JhnhnvIZNZzBP3gOrxFWOj0UxKZ525_TbTWk8ZsLcBeOK9-xOb0TaTW_5SxxSxIt-1KVkOU4mVoytS5P-0lHg2ArE3XgdQaJdpTsthff2E173vs9oEMsij0B33pd9mZ2SmCfyUSl9JyKLAZNa0zd897ctkGNnifNMDlPt3luuU8aXY8qV4E4bsMoL5zjjfaIC35q-9JVskCUkKrY5WMtKiCai1jh3AXi5gBFGqnuwpMqi4"/>
+</div>
+</header>
+<div class="flex-1 flex overflow-hidden">
+<!-- Editor Canvas -->
+<section class="flex-1 overflow-y-auto p-12 hide-scrollbar flex justify-center bg-surface-container-low">
+<div class="max-w-3xl w-full">
+<div class="bg-surface-container-lowest rounded-xl p-16 min-h-screen shadow-sm transition-all hover:bg-surface-bright">
+<input class="w-full text-4xl font-headline font-extrabold text-on-surface mb-12 border-none p-0 focus:ring-0 placeholder:text-slate-300" placeholder="Enter title..." type="text" value="The Future of Algorithmic Curation"/>
+<div class="space-y-8 font-body text-lg leading-relaxed text-on-surface-variant">
+<p>
+                                    As we navigate the complexities of the digital age, the role of algorithmic curation has transitioned from a mere utility to a central pillar of our intellectual consumption. The intersection of human intuition and machine precision represents a new frontier for editorial intelligence. 
+                                </p>
+<p class="relative group">
+<span class="bg-primary/5 border-b-2 border-primary-container cursor-pointer">The methodology employed by contemporary platforms</span> often prioritizes engagement metrics over substantive depth. This creates a feedback loop where nuance is sacrificed for the sake of click-through rates. By implementing more sophisticated proofreading engines, we can restore the reverence for text that characterized the golden age of print.
+                                    <span class="absolute -left-12 top-0 opacity-0 group-hover:opacity-100 transition-opacity text-primary"><span class="material-symbols-outlined">auto_awesome</span></span>
+</p>
+<p>
+                                    Imagine a workspace that doesn't just check for spelling errors but understands the rhythmic flow of a paragraph. A "Digital Curator" treats every sentence as an artifact in a gallery, ensuring that the light of meaning hits every word at the perfect angle.
+                                </p>
+<p class="relative group">
+<span class="bg-error-container/30 border-b-2 border-error cursor-pointer">It's really very important</span> that we maintain these standards. The clarity of thought is inextricably linked to the clarity of prose. When the tools we use to write are as sharp as the thoughts they capture, the result is nothing short of art.
+                                </p>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Suggestions Panel -->
+<aside class="w-80 bg-surface-container-low p-6 overflow-y-auto flex flex-col gap-6 hide-scrollbar">
+<div class="flex items-center justify-between mb-2">
+<h3 class="font-headline font-bold text-on-surface text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                            AI Suggestions
+                        </h3>
+<span class="bg-tertiary-container text-on-tertiary-container text-[10px] font-bold px-2 py-0.5 rounded-full">3 NEW</span>
+</div>
+<!-- Suggestion Card 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border-l-4 border-primary">
+<div class="flex items-center justify-between mb-3">
+<span class="text-[10px] font-bold text-primary tracking-widest uppercase">Clarity</span>
+<span class="material-symbols-outlined text-slate-300 text-sm" data-icon="more_horiz">more_horiz</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed mb-4">
+                            "The methodology employed by contemporary platforms" is passive. Consider a more direct active voice.
+                        </p>
+<div class="bg-surface-container p-3 rounded-lg mb-4 text-xs italic text-on-surface">
+                            "Contemporary platforms employ methodologies that..."
+                        </div>
+<button class="w-full bg-tertiary-fixed text-on-tertiary-fixed-variant py-2 rounded-lg text-xs font-bold hover:brightness-95 transition-all">
+                            Accept Suggestion
+                        </button>
+</div>
+<!-- Suggestion Card 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border-l-4 border-error">
+<div class="flex items-center justify-between mb-3">
+<span class="text-[10px] font-bold text-error tracking-widest uppercase">Conciseness</span>
+<span class="material-symbols-outlined text-slate-300 text-sm" data-icon="more_horiz">more_horiz</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed mb-4">
+                            "It's really very important" contains unnecessary filler words.
+                        </p>
+<div class="bg-surface-container p-3 rounded-lg mb-4 text-xs italic text-on-surface">
+                            "It is essential..."
+                        </div>
+<button class="w-full bg-tertiary-fixed text-on-tertiary-fixed-variant py-2 rounded-lg text-xs font-bold hover:brightness-95 transition-all">
+                            Accept Suggestion
+                        </button>
+</div>
+<!-- Suggestion Card 3 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm border-l-4 border-secondary opacity-80">
+<div class="flex items-center justify-between mb-3">
+<span class="text-[10px] font-bold text-secondary tracking-widest uppercase">Tone</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                            Your tone is currently <span class="font-bold text-on-surface">Academic</span>. Would you like to shift to <span class="text-primary font-bold">Editorial Professional</span>?
+                        </p>
+<div class="mt-3 flex gap-2">
+<button class="flex-1 py-1.5 rounded-lg border border-outline-variant text-[10px] font-bold">Adjust</button>
+<button class="flex-1 py-1.5 rounded-lg border border-outline-variant text-[10px] font-bold">Dismiss</button>
+</div>
+</div>
+<!-- Metrics Quick View -->
+<div class="mt-auto pt-6 border-t border-slate-200">
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-indigo-50/50 p-3 rounded-xl">
+<p class="text-[10px] text-slate-500 uppercase font-bold">Readability</p>
+<p class="text-lg font-headline font-black text-indigo-900">72</p>
+</div>
+<div class="bg-emerald-50/50 p-3 rounded-xl">
+<p class="text-[10px] text-slate-500 uppercase font-bold">Words</p>
+<p class="text-lg font-headline font-black text-emerald-900">428</p>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<!-- Footer -->
+<footer class="flex justify-between items-center px-8 py-4 w-full mt-auto bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 font-inter text-[10px] tracking-normal text-slate-400 dark:text-slate-600">
+<div class="flex items-center gap-6">
+<span>Copyright Berenike Tech</span>
+<div class="flex gap-4">
+<a class="text-slate-400 hover:text-indigo-400 transition-colors" href="#">Privacy Policy</a>
+<a class="text-slate-400 hover:text-indigo-400 transition-colors" href="#">Terms of Service</a>
+<a class="text-slate-400 hover:text-indigo-400 transition-colors" href="#">Support</a>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="uppercase font-bold tracking-widest">System Operational</span>
+</div>
+</footer>
+</main>
+</div>
+</body></html>

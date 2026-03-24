@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile - Editorial Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-variant": "#dae2fd",
+              "on-primary-fixed": "#100563",
+              "primary-fixed-dim": "#c3c0ff",
+              "surface-container": "#eaedff",
+              "tertiary-fixed": "#6ffbbe",
+              "primary-container": "#5250a4",
+              "surface-container-highest": "#dae2fd",
+              "outline": "#757684",
+              "on-background": "#131b2e",
+              "secondary-fixed-dim": "#b9c7df",
+              "background": "#faf8ff",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-container": "#5debaf",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#283044",
+              "error-container": "#ffdad6",
+              "on-surface-variant": "#454652",
+              "on-secondary-fixed": "#0d1c2e",
+              "inverse-on-surface": "#eef0ff",
+              "surface-tint": "#5654a8",
+              "tertiary": "#004e33",
+              "surface-dim": "#d2d9f4",
+              "on-tertiary-fixed-variant": "#005236",
+              "error": "#ba1a1a",
+              "tertiary-fixed-dim": "#4edea3",
+              "surface": "#faf8ff",
+              "on-tertiary-fixed": "#002113",
+              "tertiary-container": "#006846",
+              "surface-container-high": "#e2e7ff",
+              "on-secondary-fixed-variant": "#3a485b",
+              "outline-variant": "#c5c5d4",
+              "secondary-fixed": "#d5e3fc",
+              "surface-container-lowest": "#ffffff",
+              "on-primary-container": "#d0cdff",
+              "on-error-container": "#93000a",
+              "secondary": "#515f74",
+              "primary": "#3a388b",
+              "on-secondary": "#ffffff",
+              "surface-container-low": "#f2f3ff",
+              "surface-bright": "#faf8ff",
+              "on-surface": "#131b2e",
+              "on-error": "#ffffff",
+              "secondary-container": "#d5e3fc",
+              "on-secondary-container": "#57657a",
+              "primary-fixed": "#e2dfff",
+              "on-primary-fixed-variant": "#3e3c8f",
+              "inverse-primary": "#c3c0ff"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .editor-glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-slate-50 dark:bg-slate-950 flex items-center justify-between px-6 py-4 mx-auto">
+<div class="flex items-center gap-4">
+<button class="text-indigo-900 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors duration-200 p-2 rounded-full">
+<span class="material-symbols-outlined" data-icon="menu_open">menu_open</span>
+</button>
+<h1 class="text-indigo-900 dark:text-indigo-300 font-extrabold tracking-tighter text-lg">Editorial Intelligence</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-surface-container-highest flex items-center justify-center border-2 border-primary overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional man with a friendly expression, soft studio lighting with a neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBelgilFwZrN7I9HRYlzpMc71py7jeZIIykV9F-Ytb_B-iVV1WBg2TD3DfCW6uJwwQSlo7E2UfE0bfxjMrfn7liwfceWQpjFvMaaWyqPnrBQ7FmBTdVGbbZvjgqw_qHwtJ0wMcUh1m0cPi-n54CriPJI4jW1qTkOkvlJTkB09KLSZc5bQ1X6E8RQMX4bJbbAO-HOsAq-_m8luhLARvi49SCkIJobhufyUEfFt-jSY32zl9tuwvxbN-b_LHxWN_MzLJJ2vyBXQJyLaI"/>
+</div>
+</div>
+</header>
+<main class="max-w-4xl mx-auto px-6 pt-8">
+<!-- Profile Hero Section -->
+<section class="mb-12">
+<div class="flex flex-col md:flex-row items-center gap-8 bg-surface-container-low p-8 rounded-xl">
+<div class="relative group">
+<div class="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden shadow-2xl shadow-indigo-900/10 border-4 border-surface-container-lowest">
+<img alt="Profile Photo" class="w-full h-full object-cover" data-alt="Professional headshot of a creative director in a minimalist studio setting, high-end photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBD_nPLg6SsEThuDLJzVCCMX2stTO6aqD_V-e0XqlBb1fIiFG8H3r6bcN84hoaZD1T3Lrxme8jrguqWNHJe_3uBHj0OxbPuIVO6G9fVXKHEfhIJtewoYWEKP5ImZuIhjI4zZak6Ig490LAFw6rIFFaTSoIgaQcRSwihCBBA_bR0Xf_zvh6HYVwuu-Nr1le7I0UmrwY_H4PPLjmrwm2YN561JBahG3aCmJlJ-r_7_bvxSJY5mHnHwloa0mlDiAfX_wzuUUuZadiG8Y"/>
+</div>
+<button class="absolute -bottom-2 -right-2 bg-primary text-on-primary p-2 rounded-lg shadow-lg hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm" data-icon="edit">edit</span>
+</button>
+</div>
+<div class="text-center md:text-left flex-1">
+<span class="text-primary font-bold tracking-widest text-[10px] uppercase mb-2 block">Professional Member</span>
+<h2 class="text-4xl font-extrabold text-on-background mb-1 tracking-tight">Julian Thorne</h2>
+<p class="text-on-surface-variant font-medium mb-4">Senior Manuscript Architect</p>
+<div class="flex flex-wrap justify-center md:justify-start gap-3">
+<div class="bg-surface-variant/50 px-3 py-1 rounded-sm text-xs font-semibold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="verified">verified</span> Verified Editor
+                        </div>
+<div class="bg-surface-variant/50 px-3 py-1 rounded-sm text-xs font-semibold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="auto_awesome">auto_awesome</span> AI Power User
+                        </div>
+</div>
+</div>
+<div class="hidden lg:block w-px h-24 bg-outline-variant/20"></div>
+<div class="hidden lg:flex flex-col items-center px-6">
+<div class="text-primary font-bold text-2xl">4.8k</div>
+<div class="text-on-surface-variant text-[11px] uppercase tracking-tighter font-bold">Edits Made</div>
+</div>
+</div>
+</section>
+<!-- Bento Grid Settings -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
+<!-- Subscription Card -->
+<div class="md:col-span-7 bg-surface-container-lowest p-6 rounded-xl relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4">
+<span class="material-symbols-outlined text-primary/10 text-8xl scale-150 rotate-12 group-hover:rotate-0 transition-transform duration-500" data-icon="workspace_premium">workspace_premium</span>
+</div>
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 bg-primary-container/10 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="credit_card">credit_card</span>
+</div>
+<h3 class="font-bold text-lg">Subscription Plan</h3>
+</div>
+<div class="mb-6">
+<div class="text-on-surface-variant text-sm mb-1">Current Plan</div>
+<div class="text-2xl font-extrabold text-primary flex items-center gap-2">
+                            Editorial Pro+
+                            <span class="bg-tertiary-fixed text-on-tertiary-fixed text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Active</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="bg-primary text-on-primary px-5 py-2.5 rounded-md font-bold text-sm hover:opacity-90 transition-opacity">Manage Plan</button>
+<button class="text-on-surface-variant font-bold text-sm px-5 py-2.5 hover:bg-surface-container transition-colors rounded-md">View Invoices</button>
+</div>
+</div>
+</div>
+<!-- Stats Mini Card -->
+<div class="md:col-span-5 bg-surface-container-highest p-6 rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="font-bold text-lg mb-4">Precision Score</h3>
+<div class="flex items-end gap-2 mb-2">
+<span class="text-5xl font-extrabold text-on-background">98</span>
+<span class="text-primary font-bold text-xl mb-1">%</span>
+</div>
+<p class="text-on-surface-variant text-xs leading-relaxed">Your semantic accuracy is in the top 3% of global editors this month.</p>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2 mt-4 overflow-hidden">
+<div class="bg-primary h-full w-[98%]"></div>
+</div>
+</div>
+<!-- Language & Preferences -->
+<div class="md:col-span-5 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 bg-secondary-container/30 rounded-lg flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+</div>
+<h3 class="font-bold text-lg">Language Settings</h3>
+</div>
+<ul class="space-y-4">
+<li class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors group">
+<div class="flex flex-col">
+<span class="text-sm font-bold">Interface Language</span>
+<span class="text-[11px] text-on-surface-variant">English (UK)</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors" data-icon="chevron_right">chevron_right</span>
+</li>
+<li class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors group">
+<div class="flex flex-col">
+<span class="text-sm font-bold">Primary Lexicon</span>
+<span class="text-[11px] text-on-surface-variant">Academic &amp; Legal</span>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors" data-icon="chevron_right">chevron_right</span>
+</li>
+</ul>
+</div>
+<!-- Support & Help -->
+<div class="md:col-span-7 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant/10">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-tertiary-container/10 rounded-lg flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="help_center">help_center</span>
+</div>
+<h3 class="font-bold text-lg">Help &amp; Support</h3>
+</div>
+<button class="text-primary text-xs font-bold hover:underline">Support Ticket History</button>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-surface-container-low rounded-lg hover:bg-surface-container transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="menu_book">menu_book</span>
+<div class="text-sm font-bold">Documentation</div>
+<div class="text-[10px] text-on-surface-variant">Learn our syntax rules</div>
+</div>
+<div class="p-4 bg-surface-container-low rounded-lg hover:bg-surface-container transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-primary mb-2" data-icon="forum">forum</span>
+<div class="text-sm font-bold">Live Curator</div>
+<div class="text-[10px] text-on-surface-variant">Human-expert fallback</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="mt-20 py-8 border-t border-outline-variant/10 text-center">
+<p class="text-on-surface-variant text-[11px] font-medium tracking-widest uppercase">Copyright Berenike Tech</p>
+</footer>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl shadow-2xl shadow-indigo-900/10 z-50">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-indigo-600 dark:hover:text-indigo-300 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="description">description</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Documents</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-indigo-600 dark:hover:text-indigo-300 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="edit_note">edit_note</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Editor</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-indigo-600 dark:hover:text-indigo-300 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="insights">insights</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Insights</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-indigo-100 dark:bg-indigo-900/50 text-indigo-900 dark:text-indigo-100 rounded-xl px-4 py-1.5 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Profile</span>
+</a>
+</nav>
+</body></html>

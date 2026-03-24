@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Editorial Intelligence - Insights</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-variant": "#dae2fd",
+              "on-primary-fixed": "#100563",
+              "primary-fixed-dim": "#c3c0ff",
+              "surface-container": "#eaedff",
+              "tertiary-fixed": "#6ffbbe",
+              "primary-container": "#5250a4",
+              "surface-container-highest": "#dae2fd",
+              "outline": "#757684",
+              "on-background": "#131b2e",
+              "secondary-fixed-dim": "#b9c7df",
+              "background": "#faf8ff",
+              "on-tertiary": "#ffffff",
+              "on-tertiary-container": "#5debaf",
+              "on-primary": "#ffffff",
+              "inverse-surface": "#283044",
+              "error-container": "#ffdad6",
+              "on-surface-variant": "#454652",
+              "on-secondary-fixed": "#0d1c2e",
+              "inverse-on-surface": "#eef0ff",
+              "surface-tint": "#5654a8",
+              "tertiary": "#004e33",
+              "surface-dim": "#d2d9f4",
+              "on-tertiary-fixed-variant": "#005236",
+              "error": "#ba1a1a",
+              "tertiary-fixed-dim": "#4edea3",
+              "surface": "#faf8ff",
+              "on-tertiary-fixed": "#002113",
+              "tertiary-container": "#006846",
+              "surface-container-high": "#e2e7ff",
+              "on-secondary-fixed-variant": "#3a485b",
+              "outline-variant": "#c5c5d4",
+              "secondary-fixed": "#d5e3fc",
+              "surface-container-lowest": "#ffffff",
+              "on-primary-container": "#d0cdff",
+              "on-error-container": "#93000a",
+              "secondary": "#515f74",
+              "primary": "#3a388b",
+              "on-secondary": "#ffffff",
+              "surface-container-low": "#f2f3ff",
+              "surface-bright": "#faf8ff",
+              "on-surface": "#131b2e",
+              "on-error": "#ffffff",
+              "secondary-container": "#d5e3fc",
+              "on-secondary-container": "#57657a",
+              "primary-fixed": "#e2dfff",
+              "on-primary-fixed-variant": "#3e3c8f",
+              "inverse-primary": "#c3c0ff"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-slate-50 dark:bg-slate-950 flex items-center justify-between px-6 py-4 mx-auto">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-indigo-900 dark:text-indigo-400 cursor-pointer">menu_open</span>
+<h1 class="text-indigo-900 dark:text-indigo-300 font-extrabold tracking-tighter font-headline text-lg">Editorial Intelligence</h1>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden border border-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="professional portrait of a man with spectacles in a bright studio setting with minimalist background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCC26_fQvYqymfndtyXfQHHsoQ8kKfE_ZXCBFU3xoO1u4iCjzivovMAO5YjFUH24k6sEjJyc_VkNiraHeT7fgDMwPRkDraBZ8MideiUQIIA3rjq51aVJdscbyyOeCvxtotqcdFBkgfluQiAbDXdy4Znr36TcWIMSfoRwAG8D2WIM5C2r-xeMb63uEKlQcTHQ-5gh6bLnBQ9yF8quVOXIr09CjY-hmoxolVwe80T6Vt8B11UBZZwL9opyJdf2iBojUKaP0_s3vMRtzE"/>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 pt-8">
+<!-- Dashboard Header -->
+<section class="mb-12">
+<h2 class="font-headline font-extrabold text-4xl text-on-surface tracking-tight mb-2">Writing Intelligence</h2>
+<p class="text-on-surface-variant text-lg">Your linguistic fingerprint across 14,200 words processed this week.</p>
+</section>
+<!-- Bento Grid Insights -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
+<!-- Readability Score: Hero Card -->
+<div class="md:col-span-8 bg-surface-container-lowest rounded-xl p-8 flex flex-col justify-between min-h-[400px] border border-outline-variant/10 shadow-sm relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-6">
+<span class="text-on-surface-variant font-label text-sm uppercase tracking-widest font-semibold">Performance Metric</span>
+<div class="h-[1px] flex-1 bg-outline-variant/20"></div>
+</div>
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-8">
+<div>
+<h3 class="font-headline font-bold text-6xl text-primary mb-2">84<span class="text-2xl text-on-surface-variant/40">/100</span></h3>
+<p class="font-headline text-2xl font-bold text-on-surface">Exceptional Readability</p>
+<p class="text-on-surface-variant mt-2 max-w-sm">Your content is optimized for professional audiences. Aim for 75+ for general clarity.</p>
+</div>
+<div class="flex-1 w-full max-w-md h-48 flex items-end justify-between gap-2">
+<div class="w-full bg-primary-container/20 rounded-t-lg h-[60%] transition-all hover:bg-primary-container"></div>
+<div class="w-full bg-primary-container/20 rounded-t-lg h-[45%] transition-all hover:bg-primary-container"></div>
+<div class="w-full bg-primary-container/20 rounded-t-lg h-[75%] transition-all hover:bg-primary-container"></div>
+<div class="w-full bg-primary rounded-t-lg h-[84%] transition-all"></div>
+<div class="w-full bg-primary-container/20 rounded-t-lg h-[55%] transition-all hover:bg-primary-container"></div>
+<div class="w-full bg-primary-container/20 rounded-t-lg h-[68%] transition-all hover:bg-primary-container"></div>
+<div class="w-full bg-primary-container/20 rounded-t-lg h-[80%] transition-all hover:bg-primary-container"></div>
+</div>
+</div>
+</div>
+<div class="mt-8 flex gap-4">
+<span class="px-3 py-1 bg-tertiary-fixed text-tertiary font-label text-xs font-bold rounded-lg uppercase tracking-wider">Top 5% of Users</span>
+<span class="px-3 py-1 bg-surface-container text-on-surface-variant font-label text-xs font-bold rounded-lg uppercase tracking-wider">+12% vs Last Month</span>
+</div>
+</div>
+<!-- Vocabulary Diversity -->
+<div class="md:col-span-4 bg-primary-container rounded-xl p-8 flex flex-col justify-between text-on-primary-container shadow-lg shadow-indigo-900/10">
+<div>
+<span class="material-symbols-outlined text-4xl mb-4" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+<h3 class="font-headline font-bold text-2xl mb-1">Vocabulary Diversity</h3>
+<p class="text-on-primary-container/80 text-sm leading-relaxed">Your lexical range is wide, using 1,240 unique lemmas in your last document.</p>
+</div>
+<div class="mt-12">
+<div class="flex justify-between items-end mb-2">
+<span class="text-4xl font-bold">Lexical Density</span>
+<span class="text-lg font-semibold">68%</span>
+</div>
+<div class="w-full bg-on-primary-container/20 h-2 rounded-full overflow-hidden">
+<div class="bg-tertiary-fixed-dim h-full w-[68%]"></div>
+</div>
+</div>
+</div>
+<!-- Common Errors (Amber/Emerald Highlights) -->
+<div class="md:col-span-5 bg-surface-container-low rounded-xl p-8 border border-outline-variant/10">
+<div class="flex items-center justify-between mb-8">
+<h3 class="font-headline font-bold text-xl text-on-surface">Refinement Area</h3>
+<span class="material-symbols-outlined text-secondary">analytics</span>
+</div>
+<ul class="space-y-6">
+<li class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-orange-600">error</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="font-bold text-on-surface">Passive Voice</span>
+<span class="text-sm font-semibold text-orange-600">High Frequency</span>
+</div>
+<div class="text-sm text-on-surface-variant italic">"The report was written by..."</div>
+</div>
+</li>
+<li class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-indigo-600">spellcheck</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="font-bold text-on-surface">Redundancy</span>
+<span class="text-sm font-semibold text-indigo-600">Moderate</span>
+</div>
+<div class="text-sm text-on-surface-variant italic">"Revert back", "Advance warning"</div>
+</div>
+</li>
+<li class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-emerald-600">check_circle</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="font-bold text-on-surface">Spelling Accuracy</span>
+<span class="text-sm font-semibold text-emerald-600">99.8% Perfect</span>
+</div>
+<div class="text-sm text-on-surface-variant italic">Exceeding benchmark average</div>
+</div>
+</li>
+</ul>
+</div>
+<!-- Tone & Sentiment Analysis -->
+<div class="md:col-span-7 bg-surface-container-highest rounded-xl p-8 flex flex-col justify-center relative overflow-hidden">
+<div class="flex flex-col md:flex-row gap-8 items-center">
+<div class="w-48 h-48 rounded-full border-[12px] border-primary-container/10 flex items-center justify-center relative">
+<div class="absolute inset-0 border-[12px] border-primary border-r-transparent border-b-transparent rounded-full rotate-45"></div>
+<div class="text-center">
+<p class="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Primary Tone</p>
+<p class="text-2xl font-black text-primary">Authority</p>
+</div>
+</div>
+<div class="flex-1 space-y-4 w-full">
+<div class="space-y-2">
+<div class="flex justify-between text-sm font-bold">
+<span>Professional</span>
+<span>82%</span>
+</div>
+<div class="w-full bg-outline-variant/20 h-1.5 rounded-full">
+<div class="bg-primary h-full w-[82%] rounded-full"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-sm font-bold">
+<span>Confidence</span>
+<span>65%</span>
+</div>
+<div class="w-full bg-outline-variant/20 h-1.5 rounded-full">
+<div class="bg-tertiary-fixed-dim h-full w-[65%] rounded-full"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-sm font-bold">
+<span>Urgency</span>
+<span>14%</span>
+</div>
+<div class="w-full bg-outline-variant/20 h-1.5 rounded-full">
+<div class="bg-orange-400 h-full w-[14%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Insights Section -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/5">
+<span class="material-symbols-outlined text-indigo-500 mb-2">history_edu</span>
+<h4 class="font-bold text-on-surface mb-1">Weekly Output</h4>
+<p class="text-3xl font-black text-on-surface">24,502 <span class="text-sm font-normal text-on-surface-variant">words</span></p>
+</div>
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/5">
+<span class="material-symbols-outlined text-emerald-500 mb-2">bolt</span>
+<h4 class="font-bold text-on-surface mb-1">Time Saved</h4>
+<p class="text-3xl font-black text-on-surface">8.4 <span class="text-sm font-normal text-on-surface-variant">hours</span></p>
+</div>
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/5">
+<span class="material-symbols-outlined text-orange-500 mb-2">auto_fix_high</span>
+<h4 class="font-bold text-on-surface mb-1">AI Suggestions</h4>
+<p class="text-3xl font-black text-on-surface">112 <span class="text-sm font-normal text-on-surface-variant">accepted</span></p>
+</div>
+</section>
+<!-- Footer -->
+<footer class="text-center py-12 border-t border-outline-variant/10">
+<p class="text-on-surface-variant font-label text-sm uppercase tracking-widest font-medium">Copyright Berenike Tech</p>
+</footer>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl z-50"><!-- Documents -->
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-90 transition-transform">description</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Documents</span>
+</div>
+<!-- Editor -->
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-90 transition-transform">edit_note</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Editor</span>
+</div>
+<!-- Insights (ACTIVE) -->
+<div class="flex flex-col items-center justify-center bg-indigo-100 dark:bg-indigo-900/50 text-indigo-900 dark:text-indigo-100 rounded-xl px-4 py-1.5 active:scale-90 transition-transform duration-200 cursor-pointer">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">insights</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Insights</span>
+</div>
+<!-- Profile -->
+<div class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-4 py-1.5 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-active:scale-90 transition-transform">person</span>
+<span class="font-inter text-[11px] font-medium tracking-wide uppercase">Profile</span>
+</div></nav>
+</body></html>

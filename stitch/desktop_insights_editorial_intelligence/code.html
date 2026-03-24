@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "secondary-fixed-dim": "#b9c7df",
+              "on-secondary-fixed": "#0d1c2e",
+              "on-error-container": "#93000a",
+              "surface-dim": "#d2d9f4",
+              "error": "#ba1a1a",
+              "surface": "#faf8ff",
+              "on-secondary-fixed-variant": "#3a485b",
+              "on-secondary-container": "#57657a",
+              "outline-variant": "#c5c5d4",
+              "primary": "#3a388b",
+              "on-tertiary-container": "#5debaf",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-fixed-variant": "#005236",
+              "on-primary-fixed-variant": "#3e3c8f",
+              "surface-container-high": "#e2e7ff",
+              "surface-container": "#eaedff",
+              "primary-fixed": "#e2dfff",
+              "on-error": "#ffffff",
+              "background": "#faf8ff",
+              "tertiary-fixed-dim": "#4edea3",
+              "surface-tint": "#5654a8",
+              "primary-container": "#5250a4",
+              "inverse-on-surface": "#eef0ff",
+              "on-primary-container": "#d0cdff",
+              "surface-container-low": "#f2f3ff",
+              "primary-fixed-dim": "#c3c0ff",
+              "on-tertiary-fixed": "#002113",
+              "on-background": "#131b2e",
+              "error-container": "#ffdad6",
+              "secondary": "#515f74",
+              "on-surface-variant": "#454652",
+              "inverse-primary": "#c3c0ff",
+              "on-tertiary": "#ffffff",
+              "on-surface": "#131b2e",
+              "tertiary-container": "#006846",
+              "surface-bright": "#faf8ff",
+              "outline": "#757684",
+              "secondary-fixed": "#d5e3fc",
+              "on-primary": "#ffffff",
+              "surface-variant": "#dae2fd",
+              "secondary-container": "#d5e3fc",
+              "on-secondary": "#ffffff",
+              "inverse-surface": "#283044",
+              "tertiary-fixed": "#6ffbbe",
+              "on-primary-fixed": "#100563",
+              "surface-container-highest": "#dae2fd",
+              "tertiary": "#004e33"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-card {
+            background: rgba(242, 243, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-fixed-dim selection:text-on-primary-fixed">
+<!-- TopNavBar from Shared Components JSON -->
+<header class="bg-slate-50 dark:bg-slate-950 shadow-sm dark:shadow-none docked full-width top-0 sticky z-50">
+<div class="flex justify-between items-center w-full px-8 py-3 h-16">
+<div class="text-xl font-bold italic text-indigo-900 dark:text-indigo-100 font-headline">Editorial Intelligence</div>
+<nav class="hidden md:flex items-center space-x-8">
+<a class="font-manrope text-sm font-medium tracking-tight text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors duration-200" href="#">Editor</a>
+<a class="font-manrope text-sm font-medium tracking-tight text-indigo-700 dark:text-indigo-400 border-b-2 border-indigo-700 dark:border-indigo-400 pb-1" href="#">Insights</a>
+<a class="font-manrope text-sm font-medium tracking-tight text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors duration-200" href="#">Profile</a>
+</nav>
+<div class="flex items-center space-x-6">
+<div class="hidden lg:flex items-center bg-slate-100 dark:bg-slate-900 rounded-lg px-3 py-1.5">
+<span class="material-symbols-outlined text-slate-400 text-sm">search</span>
+<span class="ml-2 text-xs text-slate-400">Search insights...</span>
+</div>
+<div class="flex items-center space-x-4">
+<button class="material-symbols-outlined text-slate-500 hover:bg-indigo-50/50 p-2 rounded-full transition-colors">notifications</button>
+<button class="material-symbols-outlined text-slate-500 hover:bg-indigo-50/50 p-2 rounded-full transition-colors">settings</button>
+<img alt="User profile avatar" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary/10" data-alt="Professional headshot of a middle-aged man with short hair in a clean office setting, soft daylighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCG99oGc0kv4oFvly8d6CylvdqeQvgkywUrbZvW1DKxaFsk_36mRB-e1C81-CC0Sj-1NneMJyGHCKXlv_sw0u-M4VtqlGwsJhKbrvqw-esDgu6L0RVRhXDDPdEIan9e1AZ1E9MV8WKDurFRk5XT5XfUzjFBLI2jQ7NmlxzVRyifVFq0O7vWwGfckS82A5LsX-DE15XL_rmB3OEsu7_TTtU37ShBt4M2DIridCLiq94P2dTtiyffZoNf2NTGV3cz1SwYfnxjQDcPfm4"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex min-h-[calc(100vh-64px)]">
+<!-- SideNavBar from Shared Components JSON -->
+<aside class="bg-slate-100 dark:bg-slate-900 docked h-auto left-0 w-64 hidden xl:block">
+<div class="flex flex-col h-full p-4 space-y-2">
+<div class="flex items-center space-x-3 mb-8 px-2 py-4">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div>
+<div class="font-black text-indigo-800 dark:text-indigo-200 font-headline leading-none">Curator Pro</div>
+<div class="text-[10px] uppercase tracking-widest text-slate-500 mt-1">Premium Tier</div>
+</div>
+</div>
+<nav class="space-y-1">
+<div class="font-manrope text-xs uppercase tracking-widest text-slate-400 px-4 mb-2">Main Menu</div>
+<button class="flex items-center space-x-3 w-full px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:translate-x-1 transition-all duration-200 cursor-pointer active:scale-95">
+<span class="material-symbols-outlined">description</span>
+<span class="font-manrope text-xs uppercase tracking-widest">Documents</span>
+</button>
+<button class="flex items-center space-x-3 w-full px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:translate-x-1 transition-all duration-200 cursor-pointer active:scale-95">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="font-manrope text-xs uppercase tracking-widest">AI Suggestions</span>
+</button>
+<button class="flex items-center space-x-3 w-full px-4 py-3 bg-indigo-100/50 dark:bg-indigo-800/30 text-indigo-900 dark:text-indigo-100 font-semibold rounded-lg hover:translate-x-1 transition-all duration-200 cursor-pointer active:scale-95">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-manrope text-xs uppercase tracking-widest">Metrics</span>
+</button>
+<button class="flex items-center space-x-3 w-full px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:translate-x-1 transition-all duration-200 cursor-pointer active:scale-95">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-manrope text-xs uppercase tracking-widest">Library</span>
+</button>
+</nav>
+<div class="pt-8 mt-auto space-y-1">
+<div class="p-4 mb-4 bg-primary-container/10 rounded-xl">
+<div class="text-[10px] font-bold text-primary uppercase tracking-tighter mb-2">Power User</div>
+<button class="w-full bg-primary text-white py-2 rounded-lg text-xs font-bold hover:opacity-90 transition-opacity">Upgrade Plan</button>
+</div>
+<button class="flex items-center space-x-3 w-full px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-200">
+<span class="material-symbols-outlined">help</span>
+<span class="font-manrope text-xs uppercase tracking-widest">Help</span>
+</button>
+<button class="flex items-center space-x-3 w-full px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-200">
+<span class="material-symbols-outlined text-error">logout</span>
+<span class="font-manrope text-xs uppercase tracking-widest">Logout</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-8 lg:p-12 overflow-y-auto">
+<header class="mb-12 flex justify-between items-end">
+<div>
+<h1 class="text-display-lg text-4xl lg:text-5xl font-extrabold text-on-surface font-headline tracking-tight mb-2">Linguistic Insights</h1>
+<p class="text-on-surface-variant text-lg max-w-2xl font-body">Advanced analytical breakdown of your latest editorial draft: <span class="text-primary font-semibold">"Quarterly Strategy Review"</span></p>
+</div>
+<div class="flex space-x-3">
+<button class="px-5 py-2.5 rounded-xl border border-outline-variant hover:bg-surface-container-low transition-colors text-sm font-semibold flex items-center">
+<span class="material-symbols-outlined mr-2">file_download</span> Export PDF
+                    </button>
+<button class="px-5 py-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white shadow-lg hover:opacity-90 transition-all text-sm font-semibold flex items-center">
+<span class="material-symbols-outlined mr-2">refresh</span> Re-analyze
+                    </button>
+</div>
+</header>
+<!-- Bento Grid Insights -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[180px]">
+<!-- Main Metric Card -->
+<div class="md:col-span-8 md:row-span-2 bg-surface-container-lowest rounded-xl p-8 relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-primary/10 transition-colors"></div>
+<div class="relative z-10 flex flex-col h-full">
+<div class="flex justify-between items-start">
+<div>
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider mb-4 inline-block">Overall Quality</span>
+<h3 class="text-2xl font-bold font-headline">Performance Metric</h3>
+</div>
+<div class="text-right">
+<div class="text-6xl font-black text-primary font-headline tracking-tighter leading-none">84<span class="text-2xl text-primary/40">/100</span></div>
+<div class="text-tertiary font-bold text-sm mt-2 flex items-center justify-end">
+<span class="material-symbols-outlined text-sm mr-1">trending_up</span> +12% from previous draft
+                                </div>
+</div>
+</div>
+<div class="mt-auto">
+<div class="flex justify-between text-xs text-on-surface-variant mb-2 font-medium">
+<span>Grammar &amp; Syntax</span>
+<span>92%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-container rounded-full" style="width: 84%"></div>
+</div>
+<div class="mt-6 text-sm text-on-surface-variant leading-relaxed">
+                                Your writing demonstrates a high level of structural integrity. Recommendation: Reduce sentence length in the executive summary to increase readability score.
+                            </div>
+</div>
+</div>
+</div>
+<!-- Tone Analysis -->
+<div class="md:col-span-4 md:row-span-3 glass-card rounded-xl p-6 border border-white/20">
+<h3 class="text-lg font-bold font-headline mb-6 flex items-center">
+<span class="material-symbols-outlined mr-2 text-primary">psychology</span> Primary Tone
+                    </h3>
+<div class="space-y-8">
+<div>
+<div class="flex justify-between text-sm mb-3">
+<span class="font-semibold text-on-surface">Authority</span>
+<span class="text-on-surface-variant font-medium">88%</span>
+</div>
+<div class="h-10 w-full bg-surface-container-highest rounded-lg flex items-center px-1">
+<div class="h-8 bg-primary rounded-md transition-all duration-1000" style="width: 88%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-3">
+<span class="font-semibold text-on-surface">Confidence</span>
+<span class="text-on-surface-variant font-medium">74%</span>
+</div>
+<div class="h-10 w-full bg-surface-container-highest rounded-lg flex items-center px-1">
+<div class="h-8 bg-secondary rounded-md transition-all duration-1000 opacity-80" style="width: 74%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-3">
+<span class="font-semibold text-on-surface">Urgency</span>
+<span class="text-on-surface-variant font-medium">32%</span>
+</div>
+<div class="h-10 w-full bg-surface-container-highest rounded-lg flex items-center px-1">
+<div class="h-8 bg-tertiary rounded-md transition-all duration-1000 opacity-60" style="width: 32%"></div>
+</div>
+</div>
+</div>
+<div class="mt-12 p-4 bg-white/50 rounded-xl border border-outline-variant/10">
+<h4 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Linguistic Signature</h4>
+<p class="text-sm italic leading-snug">"Decisive, formal, and objective. Ideal for C-suite reporting."</p>
+</div>
+</div>
+<!-- Vocabulary Diversity -->
+<div class="md:col-span-4 md:row-span-1 bg-surface-container-low rounded-xl p-6 flex items-center space-x-4">
+<div class="w-14 h-14 bg-tertiary/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-3xl">menu_book</span>
+</div>
+<div>
+<div class="text-[10px] font-bold text-tertiary uppercase tracking-widest mb-1">Vocabulary Diversity</div>
+<div class="text-3xl font-bold font-headline text-on-surface">7.4<span class="text-sm font-normal text-on-surface-variant ml-1">/10</span></div>
+<div class="text-xs text-on-surface-variant mt-1">Exceptional word choice variety</div>
+</div>
+</div>
+<!-- Lexical Density -->
+<div class="md:col-span-4 md:row-span-1 bg-surface-container-low rounded-xl p-6 flex items-center space-x-4">
+<div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">layers</span>
+</div>
+<div>
+<div class="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Lexical Density</div>
+<div class="text-3xl font-bold font-headline text-on-surface">54.2%</div>
+<div class="text-xs text-on-surface-variant mt-1">Balanced content-to-filler ratio</div>
+</div>
+</div>
+<!-- Content Sentiment (Extra Insight) -->
+<div class="md:col-span-8 md:row-span-1 bg-surface-container-highest rounded-xl p-6 flex items-center justify-between">
+<div class="flex items-center space-x-6">
+<div class="text-left">
+<h4 class="text-xs font-bold uppercase tracking-widest text-on-surface-variant mb-2">Content Sentiment</h4>
+<div class="flex items-center space-x-2">
+<div class="flex space-x-1">
+<div class="w-2 h-6 bg-tertiary rounded-full"></div>
+<div class="w-2 h-8 bg-tertiary rounded-full"></div>
+<div class="w-2 h-4 bg-tertiary rounded-full"></div>
+<div class="w-2 h-2 bg-on-surface-variant/20 rounded-full"></div>
+<div class="w-2 h-1 bg-on-surface-variant/20 rounded-full"></div>
+</div>
+<span class="text-2xl font-bold font-headline ml-2">Strongly Positive</span>
+</div>
+</div>
+</div>
+<div class="flex -space-x-2">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center border-2 border-surface">
+<span class="material-symbols-outlined text-tertiary text-xl" style="font-variation-settings: 'FILL' 1;">sentiment_very_satisfied</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center border-2 border-surface">
+<span class="material-symbols-outlined text-primary text-xl">insights</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer from Shared Components JSON -->
+<footer class="bg-slate-50 dark:bg-slate-950 full-width border-t border-slate-200 dark:border-slate-800">
+<div class="flex justify-between items-center px-8 py-4 w-full mt-auto">
+<div class="font-inter text-[10px] tracking-normal text-slate-400 dark:text-slate-600">Copyright Berenike Tech</div>
+<div class="flex space-x-6">
+<a class="font-inter text-[10px] tracking-normal text-slate-400 hover:text-indigo-400 transition-colors" href="#">Privacy Policy</a>
+<a class="font-inter text-[10px] tracking-normal text-slate-400 hover:text-indigo-400 transition-colors" href="#">Terms of Service</a>
+<a class="font-inter text-[10px] tracking-normal text-slate-400 hover:text-indigo-400 transition-colors" href="#">Support</a>
+</div>
+</div>
+</footer>
+</body></html>

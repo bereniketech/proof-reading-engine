@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login | Editorial Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-highest": "#dae2fd",
+              "tertiary": "#004e33",
+              "inverse-surface": "#283044",
+              "tertiary-fixed": "#6ffbbe",
+              "on-primary-fixed": "#100563",
+              "on-secondary": "#ffffff",
+              "secondary-fixed": "#d5e3fc",
+              "surface-variant": "#dae2fd",
+              "secondary-container": "#d5e3fc",
+              "on-primary": "#ffffff",
+              "tertiary-container": "#006846",
+              "outline": "#757684",
+              "surface-bright": "#faf8ff",
+              "on-tertiary": "#ffffff",
+              "on-surface": "#131b2e",
+              "secondary": "#515f74",
+              "on-surface-variant": "#454652",
+              "primary-fixed-dim": "#c3c0ff",
+              "on-tertiary-fixed": "#002113",
+              "on-background": "#131b2e",
+              "error-container": "#ffdad6",
+              "inverse-primary": "#c3c0ff",
+              "surface-container-low": "#f2f3ff",
+              "inverse-on-surface": "#eef0ff",
+              "on-primary-container": "#d0cdff",
+              "on-error": "#ffffff",
+              "background": "#faf8ff",
+              "primary-fixed": "#e2dfff",
+              "surface-tint": "#5654a8",
+              "primary-container": "#5250a4",
+              "tertiary-fixed-dim": "#4edea3",
+              "primary": "#3a388b",
+              "on-tertiary-container": "#5debaf",
+              "outline-variant": "#c5c5d4",
+              "surface-container-high": "#e2e7ff",
+              "surface-container": "#eaedff",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-fixed-variant": "#005236",
+              "on-primary-fixed-variant": "#3e3c8f",
+              "surface": "#faf8ff",
+              "on-secondary-fixed-variant": "#3a485b",
+              "on-secondary-container": "#57657a",
+              "surface-dim": "#d2d9f4",
+              "error": "#ba1a1a",
+              "on-error-container": "#93000a",
+              "secondary-fixed-dim": "#b9c7df",
+              "on-secondary-fixed": "#0d1c2e"
+            },
+            fontFamily: {
+              "headline": ["Manrope", "sans-serif"],
+              "body": ["Inter", "sans-serif"],
+              "label": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-gradient {
+            background: linear-gradient(135deg, #3a388b 0%, #5250a4 100%);
+        }
+        .glass-suggestion {
+            background-color: rgba(242, 243, 255, 0.8);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-surface min-h-screen flex flex-col">
+<!-- Main Content Canvas -->
+<main class="flex-grow flex items-center justify-center px-6 py-12">
+<div class="w-full max-w-[440px] flex flex-col gap-8">
+<!-- Branding Header -->
+<div class="text-center">
+<div class="inline-flex items-center justify-center w-16 h-16 rounded-xl bg-surface-container-high mb-6">
+<span class="material-symbols-outlined text-primary text-3xl">auto_stories</span>
+</div>
+<h1 class="font-headline text-3xl font-extrabold tracking-tight text-on-surface">Editorial Intelligence</h1>
+<p class="text-on-surface-variant mt-2 font-medium">Refining thought through digital curation</p>
+</div>
+<!-- Login Card -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-[0_24px_48px_-12px_rgba(19,27,46,0.06)] border border-outline-variant/10">
+<form class="space-y-6">
+<!-- Social Login -->
+<button class="w-full flex items-center justify-center gap-3 px-4 py-3 bg-surface-container-low hover:bg-surface-container-high text-on-surface font-semibold rounded-xl transition-all duration-200 ease-out border border-outline-variant/15" type="button">
+<img alt="Google Logo" class="w-5 h-5" data-alt="Official Google 'G' icon with multi-color brand aesthetic on a clean white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQB0ty7Y0863jdwHfTpmkkio5bDoAdSEvujKloNcoeps08uDGMJvQBJnHCaxJkafUFRSPvN9Lq-fOS_EID6pM0Pq3L6CMJMilIrzalvMdwA7rSO8Ap2fMb6KMzG36-UD-NpHsGMDQtQs60JJvNAGU4yUr-O4HePd0ICuOOqcHgn5gE9HY1S-QXwWLzMynF4QHd2zW_cOYrA5JwqfAMJuqVOfaEmV6LwyTkgOWQ3pHd4xv77BTS8OI0jlncDwHx5oWcIgXGzI2_JJI"/>
+<span>Continue with Google</span>
+</button>
+<div class="relative flex items-center py-2">
+<div class="flex-grow border-t border-outline-variant/20"></div>
+<span class="flex-shrink mx-4 text-xs font-label uppercase tracking-widest text-outline">or email</span>
+<div class="flex-grow border-t border-outline-variant/20"></div>
+</div>
+<!-- Email Field -->
+<div class="space-y-1.5">
+<label class="block text-xs font-label font-semibold tracking-wider text-on-surface-variant uppercase" for="email">Email Address</label>
+<div class="relative">
+<input class="w-full px-4 py-3 bg-surface-container-low rounded-xl border-0 focus:ring-0 focus:bg-surface-container-highest text-on-surface placeholder:text-outline transition-all duration-200" id="email" placeholder="name@editorial.com" type="email"/>
+<div class="absolute bottom-0 left-0 h-[2px] w-0 bg-primary transition-all duration-300 focus-within:w-full"></div>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-1.5">
+<div class="flex justify-between items-end">
+<label class="block text-xs font-label font-semibold tracking-wider text-on-surface-variant uppercase" for="password">Password</label>
+<a class="text-xs font-label font-semibold text-primary hover:text-primary-container transition-colors" href="#">Forgot?</a>
+</div>
+<div class="relative">
+<input class="w-full px-4 py-3 bg-surface-container-low rounded-xl border-0 focus:ring-0 focus:bg-surface-container-highest text-on-surface placeholder:text-outline transition-all duration-200" id="password" placeholder="••••••••" type="password"/>
+<div class="absolute bottom-0 left-0 h-[2px] w-0 bg-primary transition-all duration-300 focus-within:w-full"></div>
+</div>
+</div>
+<!-- Submit Button -->
+<button class="w-full editorial-gradient text-on-primary font-bold py-4 rounded-xl shadow-lg hover:shadow-primary/20 transition-all duration-200 active:scale-[0.98]" type="submit">
+                        Sign In to Workspace
+                    </button>
+</form>
+<!-- Signup Link -->
+<p class="text-center mt-8 text-sm text-on-surface-variant font-medium">
+                    New to the engine? 
+                    <a class="text-primary font-bold hover:underline underline-offset-4 decoration-2" href="#">Create an account</a>
+</p>
+</div>
+<!-- Floating AI Insight (Aesthetic Polish) -->
+<div class="glass-suggestion p-4 rounded-xl border border-outline-variant/10 flex items-start gap-3 shadow-sm">
+<span class="material-symbols-outlined text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<p class="text-xs text-on-secondary-container leading-relaxed">
+<span class="font-bold text-primary">Curator Insight:</span> Users who utilize the Google Single-Sign-On environment report a 12% faster onset of flow-state editing.
+                </p>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full py-8 mt-auto opacity-80 flex flex-col md:flex-row justify-between items-center px-8 max-w-[1440px] mx-auto border-t border-outline-variant/15">
+<div class="text-[12px] font-label tracking-wide text-secondary font-medium">
+            Copyright Berenike Tech
+        </div>
+<div class="flex gap-6 mt-4 md:mt-0">
+<a class="text-[12px] font-label tracking-wide text-on-surface-variant hover:text-primary transition-colors underline underline-offset-4" href="#">Privacy Policy</a>
+<a class="text-[12px] font-label tracking-wide text-on-surface-variant hover:text-primary transition-colors underline underline-offset-4" href="#">Terms of Service</a>
+<a class="text-[12px] font-label tracking-wide text-on-surface-variant hover:text-primary transition-colors underline underline-offset-4" href="#">Contact Support</a>
+</div>
+</footer>
+</body></html>
