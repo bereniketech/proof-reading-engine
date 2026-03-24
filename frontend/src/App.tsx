@@ -294,43 +294,66 @@ function App() {
   return (
     <main className="app-shell">
       <section className="hero-card">
-        <p className="eyebrow">Proof-Reading Engine</p>
-        <h1>Upload Document</h1>
+        <div className="hero-brand">
+          <span className="hero-brand-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </span>
+          <span className="hero-brand-name">Proof-Reading Engine</span>
+        </div>
 
         {session ? (
           <div className="upload-state">
+            <div>
+              <h1 className="hero-heading">Upload your document</h1>
+              <p className="hero-subheading">AI-powered proofreading in seconds.</p>
+            </div>
+
             <div className="auth-state compact">
-              <p className="state-label">Authenticated</p>
-              <p className="state-value">{session.user.email ?? session.user.id}</p>
+              <div>
+                <p className="state-label">Signed in</p>
+                <p className="state-value">{session.user.email ?? session.user.id}</p>
+              </div>
               <button className="secondary-button" type="button" onClick={handleSignOut}>
-                Logout
+                Sign out
               </button>
             </div>
 
-            <div className="upload-grid">
-              <label
-                className={isDragging ? 'dropzone active' : 'dropzone'}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                <input
-                  type="file"
-                  accept=".docx,.pdf,.txt"
-                  onChange={handleFileInputChange}
-                />
-                <span className="dropzone-title">Upload document</span>
-                <span className="dropzone-copy">Drag and drop or click to browse (.docx, .pdf, .txt)</span>
-                {mainFile ? (
-                  <span className="file-meta">
-                    {mainFile.name} ({formatBytes(mainFile.size)})
-                  </span>
-                ) : null}
-              </label>
-            </div>
+            <label
+              className={isDragging ? 'dropzone active' : 'dropzone'}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input
+                type="file"
+                accept=".docx,.pdf,.txt"
+                onChange={handleFileInputChange}
+              />
+              <span className="dropzone-icon" aria-hidden="true">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="16 16 12 12 8 16"/>
+                  <line x1="12" y1="12" x2="12" y2="21"/>
+                  <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+                </svg>
+              </span>
+              <span className="dropzone-title">
+                {mainFile ? mainFile.name : 'Tap to browse or drag & drop'}
+              </span>
+              {mainFile ? (
+                <span className="dropzone-copy">{formatBytes(mainFile.size)} · tap to change</span>
+              ) : (
+                <span className="dropzone-copy">DOCX, PDF, or TXT — up to 20 MB</span>
+              )}
+            </label>
 
             <label className="field">
-              <span>Document Type</span>
+              <span>Document type</span>
               <select
                 className="field-select"
                 value={documentType}
@@ -346,7 +369,12 @@ function App() {
             </label>
 
             <button className="primary-button" type="button" disabled={!canUpload} onClick={handleUpload}>
-              {isUploading ? 'Uploading...' : 'Start Proofreading'}
+              {isUploading ? (
+                <>
+                  <span className="button-spinner" aria-hidden="true" style={{ display: 'inline-block', marginRight: '0.4rem', verticalAlign: 'middle' }} />
+                  Uploading...
+                </>
+              ) : 'Start Proofreading →'}
             </button>
 
             {isUploading ? (
@@ -365,33 +393,39 @@ function App() {
             ) : null}
           </div>
         ) : (
-          <>
+          <div>
+            <h1 className="hero-heading">Get started</h1>
+            <p className="hero-subheading">Sign in to proofread and improve your documents.</p>
+
             <div className="auth-tabs" role="tablist" aria-label="Authentication mode">
               <button
                 type="button"
                 className={mode === 'login' ? 'tab-button active' : 'tab-button'}
+                role="tab"
+                aria-selected={mode === 'login'}
                 onClick={() => setMode('login')}
               >
-                Login
+                Sign in
               </button>
               <button
                 type="button"
                 className={mode === 'signup' ? 'tab-button active' : 'tab-button'}
+                role="tab"
+                aria-selected={mode === 'signup'}
                 onClick={() => setMode('signup')}
               >
-                Sign Up
+                Create account
               </button>
             </div>
 
             <form className="auth-form" onSubmit={handleSubmit}>
-              <h2>{formTitle}</h2>
-
               <label className="field">
-                <span>Email</span>
+                <span>Email address</span>
                 <input
                   required
                   type="email"
                   autoComplete="email"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />
@@ -404,24 +438,25 @@ function App() {
                   minLength={8}
                   type="password"
                   autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  placeholder={mode === 'login' ? 'Your password' : 'Min. 8 characters'}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                 />
               </label>
 
               <button className="primary-button" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Please wait...' : formTitle}
+                {isSubmitting ? 'Please wait...' : mode === 'login' ? 'Sign in →' : 'Create account →'}
               </button>
             </form>
-          </>
+          </div>
         )}
 
         {errorMessage ? (
-          <p className="feedback error" role="alert" aria-live="assertive">
+          <p className="feedback error" role="alert" aria-live="assertive" style={{ marginTop: '1rem' }}>
             {errorMessage}
           </p>
         ) : null}
-        {infoMessage ? <p className="feedback info">{infoMessage}</p> : null}
+        {infoMessage ? <p className="feedback info" style={{ marginTop: '1rem' }}>{infoMessage}</p> : null}
       </section>
     </main>
   );

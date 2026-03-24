@@ -935,8 +935,10 @@ export default function ReviewPage() {
   }
 
   const pendingCount = payload.sections.filter((s) => s.status === 'pending').length;
+  const reviewedCount = payload.sections.filter((s) => s.status === 'accepted' || s.status === 'rejected').length;
+  const totalCount = payload.sections.length;
   const isProofreading = pendingCount > 0;
-  const canExportPdf = payload.sections.length > 0 && pendingCount === 0;
+  const canExportPdf = totalCount > 0 && pendingCount === 0;
 
   return (
     <div className="review-shell">
@@ -1003,8 +1005,30 @@ export default function ReviewPage() {
         </p>
       ) : null}
 
+      <div className="review-progress" aria-label="Review progress">
+        <span className="review-progress-label">
+          {reviewedCount} / {totalCount} reviewed
+        </span>
+        <div
+          className="review-progress-track"
+          role="progressbar"
+          aria-valuenow={reviewedCount}
+          aria-valuemin={0}
+          aria-valuemax={totalCount}
+          aria-label={`${reviewedCount} of ${totalCount} sections reviewed`}
+        >
+          <div
+            className="review-progress-fill"
+            style={{ width: totalCount > 0 ? `${(reviewedCount / totalCount) * 100}%` : '0%' }}
+          />
+        </div>
+      </div>
+
       <div className="review-body">
         <aside className="review-sidebar" aria-label="Document sections">
+          <div className="review-sidebar-header">
+            {totalCount} section{totalCount !== 1 ? 's' : ''}
+          </div>
           <ul className="section-list" aria-label="Section list">
             {payload.sections.map((section) => (
               <li key={section.id}>
@@ -1015,7 +1039,12 @@ export default function ReviewPage() {
                   onClick={() => setActiveSectionId(section.id)}
                 >
                   <span className="section-item-position">#{section.position + 1}</span>
-                  <span className="section-item-type">{section.section_type}</span>
+                  <span className="section-item-info">
+                    <span className="section-item-type">{section.section_type}</span>
+                    <span className="section-item-preview">
+                      {section.original_text.slice(0, 55)}
+                    </span>
+                  </span>
                   <StatusBadge status={section.status} />
                 </button>
               </li>
@@ -1109,6 +1138,13 @@ export default function ReviewPage() {
             />
           ) : (
             <div className="section-empty">
+              <span className="section-empty-icon" aria-hidden="true">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="3" y1="9" x2="21" y2="9"/>
+                  <line x1="9" y1="21" x2="9" y2="9"/>
+                </svg>
+              </span>
               <p>Select a section from the sidebar to review it.</p>
             </div>
           )}

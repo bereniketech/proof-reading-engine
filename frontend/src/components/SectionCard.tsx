@@ -370,132 +370,132 @@ export function SectionCard({
         </div>
       ) : null}
 
-      <div className="section-block">
-        <label className="section-block-label" htmlFor={addSectionTextareaId}>
-          Add missing section
-        </label>
-        <div className="section-add-controls">
-          <select
-            className="field-select section-add-select"
-            value={addSectionType}
-            disabled={isPending || isAddingSection}
-            onChange={(event) => onAddSectionTypeChange(event.target.value as SectionType)}
-          >
-            <option value="paragraph">Paragraph</option>
-            <option value="heading">Heading</option>
-          </select>
-          {addSectionType === 'heading' ? (
+      <details className="section-block section-disclosure">
+        <summary>Add missing section</summary>
+        <div className="section-disclosure-body">
+          <div className="section-add-controls">
             <select
               className="field-select section-add-select"
-              value={String(addSectionHeadingLevel)}
+              value={addSectionType}
               disabled={isPending || isAddingSection}
-              onChange={(event) => onAddSectionHeadingLevelChange(Number(event.target.value))}
+              aria-label="Section type"
+              onChange={(event) => onAddSectionTypeChange(event.target.value as SectionType)}
             >
-              {[1, 2, 3, 4, 5, 6].map((level) => (
-                <option key={level} value={level}>
-                  H{level}
-                </option>
-              ))}
+              <option value="paragraph">Paragraph</option>
+              <option value="heading">Heading</option>
             </select>
+            {addSectionType === 'heading' ? (
+              <select
+                className="field-select section-add-select"
+                value={String(addSectionHeadingLevel)}
+                disabled={isPending || isAddingSection}
+                aria-label="Heading level"
+                onChange={(event) => onAddSectionHeadingLevelChange(Number(event.target.value))}
+              >
+                {[1, 2, 3, 4, 5, 6].map((level) => (
+                  <option key={level} value={level}>
+                    H{level}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+          </div>
+          <textarea
+            id={addSectionTextareaId}
+            className="section-editor section-editor--compact"
+            value={addSectionText}
+            onChange={(event) => onAddSectionTextChange(event.target.value)}
+            placeholder="Paste or type the missing section text."
+            aria-label="Missing section text"
+            disabled={isPending || isAddingSection}
+            rows={5}
+          />
+          <div className="section-add-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={isPending || isAddingSection || addSectionText.trim().length === 0}
+              onClick={() => { void onAddSection('above'); }}
+            >
+              {isAddingSection ? 'Adding…' : 'Add above'}
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={isPending || isAddingSection || addSectionText.trim().length === 0}
+              onClick={() => { void onAddSection('below'); }}
+            >
+              {isAddingSection ? 'Adding…' : 'Add below'}
+            </button>
+          </div>
+          {addSectionError ? (
+            <p className="review-status-message review-status-message--error" role="alert">
+              {addSectionError}
+            </p>
           ) : null}
         </div>
-        <textarea
-          id={addSectionTextareaId}
-          className="section-editor section-editor--compact"
-          value={addSectionText}
-          onChange={(event) => onAddSectionTextChange(event.target.value)}
-          placeholder="Paste or type the missing section text."
-          disabled={isPending || isAddingSection}
-          rows={5}
-        />
-        <div className="section-add-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={isPending || isAddingSection || addSectionText.trim().length === 0}
-            onClick={() => {
-              void onAddSection('above');
-            }}
-          >
-            {isAddingSection ? 'Adding…' : 'Add above'}
-          </button>
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={isPending || isAddingSection || addSectionText.trim().length === 0}
-            onClick={() => {
-              void onAddSection('below');
-            }}
-          >
-            {isAddingSection ? 'Adding…' : 'Add below'}
-          </button>
-        </div>
-        {addSectionError ? (
-          <p className="review-status-message review-status-message--error" role="alert">
-            {addSectionError}
-          </p>
-        ) : null}
-      </div>
+      </details>
 
-      <div className="section-block">
-        <label className="section-block-label" htmlFor={splitSectionTextareaId}>
-          Split this section
-        </label>
-        <p className="section-split-hint">
-          The corrected text editor above becomes the upper section. Use the field below for the new lower section.
-        </p>
-        <div className="section-add-controls">
-          <select
-            className="field-select section-add-select"
-            value={splitSectionType}
-            disabled={isPending || isSplittingSection}
-            onChange={(event) => onSplitSectionTypeChange(event.target.value as SectionType)}
-          >
-            <option value="paragraph">Lower section: Paragraph</option>
-            <option value="heading">Lower section: Heading</option>
-          </select>
-          {splitSectionType === 'heading' ? (
+      <details className="section-block section-disclosure">
+        <summary>Split this section</summary>
+        <div className="section-disclosure-body">
+          <p className="section-split-hint">
+            The corrected text editor above becomes the upper section. Paste the new lower section text below.
+          </p>
+          <div className="section-add-controls">
             <select
               className="field-select section-add-select"
-              value={String(splitSectionHeadingLevel)}
+              value={splitSectionType}
               disabled={isPending || isSplittingSection}
-              onChange={(event) => onSplitSectionHeadingLevelChange(Number(event.target.value))}
+              aria-label="Lower section type"
+              onChange={(event) => onSplitSectionTypeChange(event.target.value as SectionType)}
             >
-              {[1, 2, 3, 4, 5, 6].map((level) => (
-                <option key={level} value={level}>
-                  H{level}
-                </option>
-              ))}
+              <option value="paragraph">Lower: Paragraph</option>
+              <option value="heading">Lower: Heading</option>
             </select>
+            {splitSectionType === 'heading' ? (
+              <select
+                className="field-select section-add-select"
+                value={String(splitSectionHeadingLevel)}
+                disabled={isPending || isSplittingSection}
+                aria-label="Lower section heading level"
+                onChange={(event) => onSplitSectionHeadingLevelChange(Number(event.target.value))}
+              >
+                {[1, 2, 3, 4, 5, 6].map((level) => (
+                  <option key={level} value={level}>
+                    H{level}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+          </div>
+          <textarea
+            id={splitSectionTextareaId}
+            className="section-editor section-editor--compact"
+            value={splitSectionText}
+            onChange={(event) => onSplitSectionTextChange(event.target.value)}
+            placeholder="Move the lower part of this section here."
+            aria-label="Lower section text"
+            disabled={isPending || isSplittingSection}
+            rows={5}
+          />
+          <div className="section-add-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={isPending || isSplittingSection || editedText.trim().length === 0 || splitSectionText.trim().length === 0}
+              onClick={() => { void onSplitSection(); }}
+            >
+              {isSplittingSection ? 'Splitting…' : 'Split into two sections'}
+            </button>
+          </div>
+          {splitSectionError ? (
+            <p className="review-status-message review-status-message--error" role="alert">
+              {splitSectionError}
+            </p>
           ) : null}
         </div>
-        <textarea
-          id={splitSectionTextareaId}
-          className="section-editor section-editor--compact"
-          value={splitSectionText}
-          onChange={(event) => onSplitSectionTextChange(event.target.value)}
-          placeholder="Move the lower part of this section here."
-          disabled={isPending || isSplittingSection}
-          rows={5}
-        />
-        <div className="section-add-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            disabled={isPending || isSplittingSection || editedText.trim().length === 0 || splitSectionText.trim().length === 0}
-            onClick={() => {
-              void onSplitSection();
-            }}
-          >
-            {isSplittingSection ? 'Splitting…' : 'Split into two sections'}
-          </button>
-        </div>
-        {splitSectionError ? (
-          <p className="review-status-message review-status-message--error" role="alert">
-            {splitSectionError}
-          </p>
-        ) : null}
-      </div>
+      </details>
 
       <div className="section-actions">
         <button
