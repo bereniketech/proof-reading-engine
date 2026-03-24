@@ -34,7 +34,7 @@
 - Provider: Supabase Auth
 
 ## Package Manager
-- bun
+- npm
 
 ## Stack
 - Frontend: React + TypeScript + Vite
