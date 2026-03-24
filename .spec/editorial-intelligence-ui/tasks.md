@@ -70,7 +70,7 @@
 
 ---
 
-- [ ] 5. Build AppShell layout (Sidebar + TopNav + BottomNav)
+- [x] 5. Build AppShell layout (Sidebar + TopNav + BottomNav)
   - Create `frontend/src/components/layout/Sidebar.tsx`:
     - Brand section: Material Symbol `auto_stories` in 3rem indigo box + "AI Curator" wordmark + "v2.4" version badge.
     - Nav items: Documents (`/dashboard`), Editor (stored last-editor URL or `/dashboard`), Insights (stored last-insights URL or `/dashboard`), Profile (`/profile`).

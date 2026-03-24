@@ -1,7 +1,7 @@
 ---
 task: 006
 feature: editorial-intelligence-ui
-status: pending
+status: complete
 depends_on: [005]
 ---
 
@@ -299,21 +299,21 @@ _Skills: /build-website-web-app — forms, auth UX_
 ---
 
 ## Acceptance Criteria
-- [ ] Visiting `/login` while unauthenticated renders the full card (not the stub).
-- [ ] Sign in with valid credentials → redirected to `/dashboard`.
-- [ ] Invalid credentials → error message displayed below form.
-- [ ] Toggle between login/signup mode works.
-- [ ] Sign-up without email confirmation → info message shown.
-- [ ] Decorative glassmorphism accent card renders bottom-right.
-- [ ] Gradient "Sign In to Workspace" button renders correctly.
-- [ ] `npm run typecheck` exits 0.
+- [x] Visiting `/login` while unauthenticated renders the full card (not the stub).
+- [x] Sign in with valid credentials → redirected to `/dashboard`.
+- [x] Invalid credentials → error message displayed below form.
+- [x] Toggle between login/signup mode works.
+- [x] Sign-up without email confirmation → info message shown.
+- [x] Decorative glassmorphism accent card renders bottom-right.
+- [x] Gradient "Sign In to Workspace" button renders correctly.
+- [!] `npm run typecheck` exits 0. Frontend typecheck passes; workspace root typecheck fails in backend due missing local dependency binaries in `backend/node_modules` (`typescript`/`tsx`/`eslint`) unrelated to Task 006 changes.
 
 ---
 
 ## Handoff to Next Task
 > Fill via /task-handoff after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:** `frontend/src/pages/LoginPage.tsx`, `frontend/src/styles.css`
+**Decisions made:** Implemented LoginPage as a standalone auth surface using existing `useAuth` session state and direct `supabase.auth` submit handlers; used CSS token-based inline styles to match Syntactic Prism visuals; added `.field-input` class for underline focus animation without modifying existing `.field` behavior for other pages.
+**Context for next task:** Login route is now fully functional and redirects authenticated users to `/dashboard`. Task 007 can build dashboard document cards and `/api/sessions` endpoint without login page dependency blockers.
+**Open questions:** Full workspace verification remains blocked by missing backend local binaries (`backend/node_modules`); frontend checks for this task pass.

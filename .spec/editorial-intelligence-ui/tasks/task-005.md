@@ -1,7 +1,7 @@
 ---
 task: 005
 feature: editorial-intelligence-ui
-status: pending
+status: completed
 depends_on: [004]
 ---
 
@@ -349,7 +349,10 @@ _Skills: /build-website-web-app — layout, responsive design_
 ## Handoff to Next Task
 > Fill via /task-handoff after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:** `frontend/src/App.tsx`, `frontend/src/components/layout/AppShell.tsx`, `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/components/layout/TopNav.tsx`, `frontend/src/components/layout/BottomNav.tsx`, `frontend/src/styles.css`, `bug-log.md`
+**Decisions made:**
+- Added desktop-only fixed sidebar and mobile-only bottom nav using the 768px breakpoint from the feature spec.
+- Persisted the last visited editor and insights routes in localStorage so navigation can return to the most recent session when available.
+- Implemented a mobile sidebar drawer in AppShell so the TopNav hamburger performs a real open/close action without requiring page-level state.
+**Context for next task:** Authenticated routes now render inside a responsive shell, so task 006 can focus only on replacing the LoginPage stub with the editorial design and Supabase auth form behavior.
+**Open questions:** None.

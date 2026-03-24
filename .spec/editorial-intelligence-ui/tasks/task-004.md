@@ -1,7 +1,7 @@
 ---
 task: 004
 feature: editorial-intelligence-ui
-status: pending
+status: complete
 depends_on: [003]
 ---
 
@@ -174,7 +174,31 @@ _Skills: /build-website-web-app — React Router, route guards_
 ## Handoff to Next Task
 > Fill via /task-handoff after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `frontend/src/App.tsx` — completely rewritten with React Router (BrowserRouter, Routes, ProtectedRoute, RootRedirect, LegacyReviewRedirect)
+- `frontend/src/main.tsx` — simplified to always render App wrapped in AuthProvider; removed conditional ReviewPage logic
+- `frontend/src/lib/constants.ts` — created with DOCUMENT_TYPES, MAX_FILE_SIZE_BYTES, ACCEPTED_EXTENSIONS, apiBaseUrl
+- `frontend/src/pages/LoginPage.tsx` — created (stub)
+- `frontend/src/pages/DashboardPage.tsx` — created (stub)
+- `frontend/src/pages/EditorPage.tsx` — created (stub)
+- `frontend/src/pages/InsightsPage.tsx` — created (stub)
+- `frontend/src/pages/ProfilePage.tsx` — created (stub)
+- `frontend/src/components/layout/AppShell.tsx` — created with `<Outlet />` wrapper
+
+**Decisions made:**
+- All 6 page stubs created with minimal placeholder content to allow imports
+- Legacy `/review?sessionId=X` redirect implemented as LegacyReviewRedirect component
+- ProtectedRoute uses useAuth() hook to check `session` and `loading` states
+- RootRedirect navigates to /dashboard (authenticated) or /login (unauthenticated)
+- BrowserRouter wraps all routes; nested Route structure with ProtectedRoute as parent guard
+- No lazy imports used (project size doesn't require code-splitting)
+- AppShell component positioned as single outlet wrapper for authenticated routes
+
+**Context for next task:**
+- App routing skeleton complete and type-checking
+- Page stub files exist but contain minimal content (divs with page names)
+- Constants extracted from monolithic App.tsx are available in `lib/constants.ts`
+- All 6 protected routes redirect to login if not authenticated
+- Legacy review URL pattern fully handled via router
+
+**Open questions:** None

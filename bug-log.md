@@ -51,3 +51,9 @@
 - **Root cause:** The SectionCard LCS diff logic relied on bounds that TypeScript could not prove under strict indexed access, and `@types/node` was missing from frontend devDependencies.
 - **Fix applied:** Added explicit guarded token reads and row access in the diff builder so matrix and token indexing remains type-safe without changing behavior, and added `@types/node` to the frontend devDependencies.
 - **Affected file(s):** frontend/src/components/SectionCard.tsx, frontend/package.json
+
+## [2026-03-24] Router shell file was left incomplete
+- **What broke:** The frontend router file was missing the `Outlet` import and ended before the `App` component closed, which would break TypeScript compilation while adding the authenticated shell.
+- **Root cause:** The router migration from the earlier monolithic app left `frontend/src/App.tsx` in a partially edited state.
+- **Fix applied:** Restored the missing router import and completed the `App` component while wiring the new AppShell layout components.
+- **Affected file(s):** frontend/src/App.tsx, frontend/src/components/layout/AppShell.tsx, frontend/src/components/layout/Sidebar.tsx, frontend/src/components/layout/TopNav.tsx, frontend/src/components/layout/BottomNav.tsx

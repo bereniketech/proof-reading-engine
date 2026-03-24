@@ -1,7 +1,7 @@
 ---
 task: 003
 feature: editorial-intelligence-ui
-status: pending
+status: completed
 depends_on: [002]
 ---
 
@@ -215,7 +215,13 @@ _Skills: /build-website-web-app — React context; /code-writing-software-develo
 ## Handoff to Next Task
 > Fill via /task-handoff after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:** `frontend/src/context/AuthContext.tsx`, `frontend/src/context/AuthContextProvider.ts`, `frontend/src/context/useAuth.ts`, `frontend/src/main.tsx`
+**Decisions made:** 
+- Split auth context into three files following react-refresh ESLint rule (only components export from component files)
+- AuthContextProvider.ts holds context creation (non-component code)
+- useAuth.ts holds the hook and AuthContextValue interface
+- AuthContext.tsx holds just the AuthProvider component
+- `loading` flag initialized as `true` to prevent flash-of-unauthenticated-content
+- `signOut()` available in context for logout flows
+**Context for next task:** Auth state is now globally available via `useAuth()` hook. Task-004 will replace App.tsx routing with React Router `BrowserRouter` and define protected routes. The AuthContext is already wrapped at the root in main.tsx, so it will be available to all pages regardless of route.
+**Open questions:** None — auth context is fully functional and integrated.
