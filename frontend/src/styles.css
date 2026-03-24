@@ -642,6 +642,12 @@ p {
   font-size: var(--font-size-base);
 }
 
+.review-match-success {
+  border-bottom-color: var(--color-success-border);
+  background: var(--color-success-foreground);
+  color: var(--color-success);
+}
+
 /* Section completion progress bar */
 .review-progress {
   flex-shrink: 0;

@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { createAdminSupabaseClient, createUserScopedSupabaseClient } from '../lib/supabase.js';
 import { applySectionInstruction } from '../services/openai.js';
+import { matchReferencesToSections, NoReferencesSectionError } from '../services/reference-matcher.js';
 
 type SectionType = 'heading' | 'paragraph';
 type InsertPlacement = 'above' | 'below';
@@ -1061,6 +1062,44 @@ router.post('/sessions/:sessionId/merge-sections', async (req: Request, res: Res
     });
   } catch (error) {
     serverError(res, error instanceof Error ? error.message : 'Failed to merge sections.');
+  }
+});
+
+router.post('/sessions/:sessionId/match-references', async (req: Request, res: Response) => {
+  const authToken = getVerifiedAccessToken(res);
+  const authenticatedUser = getAuthenticatedUser(res);
+  const sessionId = typeof req.params.sessionId === 'string' ? req.params.sessionId : '';
+
+  if (!authToken || !authenticatedUser) {
+    unauthorized(res);
+    return;
+  }
+
+  if (!isUuid(sessionId)) {
+    badRequest(res, 'Invalid session id format.');
+    return;
+  }
+
+  const ownerId = await getSessionOwnerId(sessionId);
+  if (!ownerId) {
+    notFound(res);
+    return;
+  }
+
+  if (ownerId !== authenticatedUser.id) {
+    forbidden(res);
+    return;
+  }
+
+  try {
+    const result = await matchReferencesToSections(sessionId);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    if (error instanceof NoReferencesSectionError) {
+      badRequest(res, error.message);
+      return;
+    }
+    serverError(res, error instanceof Error ? error.message : 'Reference matching failed.');
   }
 });
 

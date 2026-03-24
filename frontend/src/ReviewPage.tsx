@@ -106,6 +106,22 @@ type MergeSectionsResponse = MergeSectionsSuccessResponse | ApiErrorResponse;
 type AddSectionResponse = AddSectionSuccessResponse | ApiErrorResponse;
 type SplitSectionResponse = SplitSectionSuccessResponse | ApiErrorResponse;
 
+interface ReferenceMatchSummary {
+  matchedSectionCount: number;
+  totalReferencesLinked: number;
+  noCitationsDetected: boolean;
+}
+
+interface MatchReferencesSuccessResponse {
+  success: true;
+  data: {
+    summary: ReferenceMatchSummary;
+    sections: SectionRecord[];
+  };
+}
+
+type MatchReferencesResponse = MatchReferencesSuccessResponse | ApiErrorResponse;
+
 const apiBaseUrl = (import.meta.env.VITE_BACKEND_URL as string | undefined) || 'http://localhost:3001';
 const POLL_INTERVAL_MS = 2000;
 
@@ -250,6 +266,9 @@ export default function ReviewPage() {
   const [instructionError, setInstructionError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [isMatchingReferences, setIsMatchingReferences] = useState(false);
+  const [matchReferencesError, setMatchReferencesError] = useState<string | null>(null);
+  const [matchReferencesSummary, setMatchReferencesSummary] = useState<ReferenceMatchSummary | null>(null);
   const [referenceStyle, setReferenceStyle] = useState<ReferenceStyle>('apa');
   const [linkingSectionId, setLinkingSectionId] = useState<string | null>(null);
   const [mergingSectionId, setMergingSectionId] = useState<string | null>(null);
@@ -851,6 +870,44 @@ export default function ReviewPage() {
     }
   };
 
+  const handleAutoMatchReferences = async (): Promise<void> => {
+    if (!supabaseSession || !sessionId) return;
+
+    setMatchReferencesError(null);
+    setMatchReferencesSummary(null);
+    setIsMatchingReferences(true);
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/sessions/${encodeURIComponent(sessionId)}/match-references`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${supabaseSession.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      const body = (await response.json()) as MatchReferencesResponse;
+
+      if (!response.ok || !body.success) {
+        throw new Error((body as ApiErrorResponse).error ?? 'Auto-match failed.');
+      }
+
+      const { data } = body as MatchReferencesSuccessResponse;
+      setPayload((current) => (current ? { ...current, sections: data.sections } : current));
+      setDirtySectionIds({});
+      setMatchReferencesSummary(data.summary);
+    } catch (err) {
+      setMatchReferencesError(
+        err instanceof Error ? err.message : 'Auto-match failed. Please retry.',
+      );
+    } finally {
+      setIsMatchingReferences(false);
+    }
+  };
+
   const activeSection = payload?.sections.find((s) => s.id === activeSectionId) ?? null;
   const referenceData = useMemo(() => {
     if (!payload) {
@@ -972,6 +1029,25 @@ export default function ReviewPage() {
               </select>
             </label>
           ) : null}
+          {referenceData.options.length > 0 && !isProofreading ? (
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={isMatchingReferences}
+              onClick={() => {
+                void handleAutoMatchReferences();
+              }}
+            >
+              {isMatchingReferences ? (
+                <>
+                  <span className="button-spinner" aria-hidden="true" />
+                  Matching references...
+                </>
+              ) : (
+                'Auto-match References'
+              )}
+            </button>
+          ) : null}
           <button
             type="button"
             className="primary-button review-export-button"
@@ -1002,6 +1078,18 @@ export default function ReviewPage() {
       {exportError ? (
         <p className="review-export-error" role="alert">
           {exportError}
+        </p>
+      ) : null}
+      {matchReferencesSummary ? (
+        <p className="review-export-error review-match-success" role="status">
+          {matchReferencesSummary.noCitationsDetected
+            ? 'No citation markers detected. Reference links were not changed.'
+            : `Auto-matched: ${matchReferencesSummary.matchedSectionCount} section${matchReferencesSummary.matchedSectionCount !== 1 ? 's' : ''} linked to ${matchReferencesSummary.totalReferencesLinked} reference${matchReferencesSummary.totalReferencesLinked !== 1 ? 's' : ''}.`}
+        </p>
+      ) : null}
+      {matchReferencesError ? (
+        <p className="review-export-error" role="alert">
+          {matchReferencesError}
         </p>
       ) : null}
 

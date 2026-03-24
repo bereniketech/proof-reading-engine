@@ -8,7 +8,7 @@ import { createAdminSupabaseClient } from '../lib/supabase.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Works from both src/services/ (dev/tsx) and dist/services/ (prod build)
 const FONT_DIR = path.resolve(__dirname, '../../fonts');
-const REFERENCE_HEADING_TEXTS = new Set(['references', 'bibliography', 'works cited']);
+export const REFERENCE_HEADING_TEXTS = new Set(['references', 'bibliography', 'works cited']);
 
 type ReferenceStyle = 'apa' | 'mla' | 'chicago' | 'ieee' | 'vancouver';
 
@@ -16,12 +16,12 @@ interface ExportOptions {
   referenceStyle?: ReferenceStyle;
 }
 
-interface ReferenceSection {
+export interface ReferenceSection {
   position: number;
   text: string;
 }
 
-interface Section {
+export interface Section {
   id: string;
   session_id: string;
   position: number;
@@ -47,11 +47,11 @@ interface Session {
   updated_at: string;
 }
 
-function normalizeText(value: string): string {
+export function normalizeText(value: string): string {
   return value.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
-function getSectionText(section: Section): string {
+export function getSectionText(section: Section): string {
   const textToUse =
     section.status === 'rejected'
       ? section.original_text
@@ -60,7 +60,7 @@ function getSectionText(section: Section): string {
   return textToUse.trim();
 }
 
-function findReferencesHeadingIndex(sections: Section[]): number {
+export function findReferencesHeadingIndex(sections: Section[]): number {
   return sections.findIndex((section) => {
     if (section.section_type !== 'heading') {
       return false;
@@ -70,7 +70,7 @@ function findReferencesHeadingIndex(sections: Section[]): number {
   });
 }
 
-function extractReferenceSections(sections: Section[]): { headingPosition: number | null; entries: ReferenceSection[] } {
+export function extractReferenceSections(sections: Section[]): { headingPosition: number | null; entries: ReferenceSection[] } {
   const headingIndex = findReferencesHeadingIndex(sections);
   if (headingIndex < 0) {
     return {
@@ -439,4 +439,4 @@ async function exportSession(sessionId: string, options: ExportOptions = {}): Pr
 }
 
 export { exportSession };
-export type { Session, Section, ReferenceStyle, ExportOptions };
+export type { Session, ReferenceStyle, ExportOptions };
