@@ -1,7 +1,7 @@
 ---
 task: 009
 feature: editorial-intelligence-ui
-status: pending
+status: complete
 depends_on: [008]
 ---
 
