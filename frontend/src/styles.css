@@ -1447,6 +1447,17 @@ p {
   }
 }
 
+/* Dashboard page responsive */
+.dashboard-bento {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .dashboard-bento {
+    grid-template-columns: 7fr 5fr;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
