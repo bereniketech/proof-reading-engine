@@ -10,6 +10,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 import { verifySupabaseJwt } from './middleware/auth.js';
 import { exportRouter } from './routes/export.js';
 import { sectionsRouter } from './routes/sections.js';
+import { sessionsListRouter } from './routes/sessions-list.js';
 import { uploadRouter } from './routes/upload.js';
 
 const app = express();
@@ -36,6 +37,7 @@ app.use('/api', verifySupabaseJwt);
 app.use('/api', exportRouter);
 app.use('/api', uploadRouter);
 app.use('/api', sectionsRouter);
+app.use('/api', sessionsListRouter);
 
 app.listen(port, () => {
   console.warn(`Backend listening on http://localhost:${port}`);

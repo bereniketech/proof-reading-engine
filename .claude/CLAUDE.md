@@ -9,8 +9,27 @@ Layer 3 Tools: `tools/` — deterministic scripts. API keys in `.env`. Never sto
 Feature: editorial-intelligence-ui
 Spec: .spec/editorial-intelligence-ui/requirements.md, .spec/editorial-intelligence-ui/design.md
 Tasks: .spec/editorial-intelligence-ui/tasks/
-Current task: .spec/editorial-intelligence-ui/tasks/task-007.md
+Current task: .spec/editorial-intelligence-ui/tasks/task-008.md
 Branch: main
+
+## Build Order (remaining)
+| # | Task | File | What |
+|---|---|---|---|
+| 1 | Task 008 | `task-008.md` | DashboardPage — upload panel + recent docs grid |
+| 2 | Task 009 | `task-009.md` | SuggestionPanel component |
+| 3 | Task 010 | `task-010.md` | EditorPage — split-pane + toolbar |
+| 4 | Task 011 | `task-011.md` | InsightsPage + GET /api/sessions/:id/insights |
+| 5 | Task 012 | `task-012.md` | ProfilePage + GET\|PATCH /api/users/me |
+| 6 | Task 013 | `task-013.md` | Backend insights endpoint |
+| 7 | Task 014 | `task-014.md` | Backend user profile endpoint |
+| 8 | Task 015 | `task-015.md` | Mobile responsiveness audit (375px/768px) |
+| 9 | Task 016 | `task-016.md` | E2E Playwright tests |
+
+## Status Snapshot (2026-04-19)
+**Backend:** production-ready. Upload, parse, proofread, sections CRUD, PDF export all complete. Missing: insights endpoint, user profile endpoint.
+**Frontend:** ~30% complete. Done: LoginPage, AppShell+Layout, DocumentCard, SectionCard (legacy). Stubs: DashboardPage, EditorPage, InsightsPage, ProfilePage. Missing: SuggestionPanel component entirely.
+**Tests:** backend unit tests exist; Playwright suite empty.
+**Mobile:** not yet audited.
 
 ## Start Here
 Read `.spec/plan.md` for project overview, then `.spec/requirements.md`, `.spec/design.md`, and `.spec/tasks.md` for full spec.
@@ -36,6 +55,13 @@ Skills are loaded via `@` imports below. Active on every session start.
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/testing-quality/e2e-testing/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/nutrient-document-processing/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/planning/planning-specification-architecture/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/frameworks-frontend/react-ui-patterns/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/frameworks-frontend/react-best-practices/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/ui-design/ui-ux-pro-max/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/ui-design/design-system/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/testing-quality/playwright-skill/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/performance/web-performance-optimization/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/_studio/batch-tasks/SKILL.md
 
 ## Agents
 Specialized subagents via junction → `C:/Users/Hp/Desktop/Experiment/claude_kit/agents/`. Invoke with `@agent-name`.
@@ -50,6 +76,7 @@ Specialized subagents via junction → `C:/Users/Hp/Desktop/Experiment/claude_ki
 | `@database-reviewer` | Writing SQL, migrations, or schema changes | No DB interaction |
 | `@e2e-runner` | Adding or modifying Playwright tests | Unit tests only |
 | `@doc-updater` | Public API surface changes | Internal refactor |
+| `@ui-design-expert` | Building new pages/components (Tasks 008–012) with bespoke layout or design system decisions | Simple prop/style tweak |
 
 `@code-reviewer` and `@tdd-guide` are triggered via `/code-review` and `/tdd` commands — not inline.
 **Rule:** Never invoke agents in the last 20% of context. Never invoke inside autonomous loops or hook scripts.
