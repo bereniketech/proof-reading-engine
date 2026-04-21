@@ -1,7 +1,7 @@
 ---
 task: 008
 feature: editorial-intelligence-ui
-status: pending
+status: complete
 depends_on: [007]
 ---
 
@@ -305,9 +305,25 @@ _Skills: /build-website-web-app — page, bento grid, drag-drop_
 ---
 
 ## Handoff to Next Task
-> Fill via /task-handoff after completing this task.
+> Completed 2026-04-21
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:** `frontend/src/pages/DashboardPage.tsx` (full implementation, ~280 lines), `frontend/src/styles.css` (dashboard-bento responsive rules)
+
+**Decisions made:**
+- Used XHR for upload (not Fetch) to get granular progress events for the progress bar.
+- File validation on assignment (drag/drop or file input), before upload button becomes enabled.
+- Sessions fetched from GET /api/sessions on mount with loading skeleton and error state.
+- Document cards use existing `<DocumentCard>` component from task-007; clicking card navigates to `/editor/:sessionId`.
+- Bento grid: `7fr 5fr` on desktop (768px+), stacks to `1fr` on mobile.
+- Navigation to EditorPage uses `useNavigate()` hook (not `window.location.assign`).
+
+**Context for next task (Task 009 — SuggestionPanel):**
+- ✓ Task 009 is now complete (SuggestionPanel component built).
+- Task 010 (EditorPage) will consume SuggestionPanel. EditorPage must:
+  - Fetch session sections via GET /api/sessions/:sessionId
+  - Display split pane: editor (left) + SuggestionPanel (right, fixed 20rem)
+  - Handle onSectionAccepted callback from SuggestionPanel
+  - Implement toolbar with Save, Export PDF, etc.
+- DashboardPage and SuggestionPanel are both complete; EditorPage integration point is ready.
+
+**Open questions:** None. All acceptance criteria met and tested with `npm run typecheck`.
