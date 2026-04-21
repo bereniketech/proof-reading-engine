@@ -9,6 +9,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 import { verifySupabaseJwt } from './middleware/auth.js';
 import { exportRouter } from './routes/export.js';
+import { insightsRouter } from './routes/insights.js';
 import { sectionsRouter } from './routes/sections.js';
 import { sessionsListRouter } from './routes/sessions-list.js';
 import { uploadRouter } from './routes/upload.js';
@@ -35,6 +36,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 app.use('/api', verifySupabaseJwt);
 app.use('/api', exportRouter);
+app.use('/api', insightsRouter);
 app.use('/api', uploadRouter);
 app.use('/api', sectionsRouter);
 app.use('/api', sessionsListRouter);
