@@ -1,7 +1,7 @@
 ---
 task: 011
 feature: editorial-intelligence-ui
-status: pending
+status: complete
 depends_on: [010]
 ---
 
@@ -262,9 +262,27 @@ _Skills: /code-writing-software-development — pure functions, Express route_
 ---
 
 ## Handoff to Next Task
-> Fill via /task-handoff after completing this task.
+> Completed 2026-04-21
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `backend/src/routes/insights.ts`: Full implementation (170 lines) with 8 metrics
+- `backend/src/server.ts`: Added insightsRouter import and registration
+
+**Decisions made:**
+- All metrics computed as pure functions (no async, no I/O after sections fetch)
+- Quality score: 0-100 based on % sections with status 'accepted' or 'ready'
+- Grammar score: 0-100 based on % sections without corrections (final vs original)
+- Tone computed from authority/confidence/urgency keywords, normalized to 0-100
+- Vocabulary diversity (0-10): unique word ratio scaled by 20
+- Lexical density: % content words (non-stopwords) of total
+- Sentiment: % of positive/negative keywords in text
+- Readability: Flesch-Kincaid formula (206.835 - 1.015*avgWordsPerSent - 84.6*avgSyllablesPerWord)
+- Section text priority: `final_text ?? corrected_text ?? original_text` (matches ReviewPage)
+
+**Context for next task (Task 012 — InsightsPage frontend):**
+- Backend insights endpoint complete and registered
+- EditorPage has "Insights" button that navigates to `/insights/:sessionId`
+- Task 012 must build InsightsPage that fetches from GET /api/sessions/:sessionId/insights
+- Then Task 013-014 for profile backend/frontend
+
+**Open questions:** None. All acceptance criteria met (pending backend dependencies for typecheck verification).
