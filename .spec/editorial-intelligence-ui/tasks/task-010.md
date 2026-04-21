@@ -1,7 +1,7 @@
 ---
 task: 010
 feature: editorial-intelligence-ui
-status: pending
+status: complete
 depends_on: [009]
 ---
 
@@ -363,9 +363,27 @@ _Skills: /build-website-web-app — page composition; /code-writing-software-dev
 ---
 
 ## Handoff to Next Task
-> Fill via /task-handoff after completing this task.
+> Completed 2026-04-21
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `frontend/src/ReviewPage.tsx`: Added optional `sessionId` prop interface; prefer prop over URL query param
+- `frontend/src/pages/EditorPage.tsx`: Full implementation (~250 lines)
+- `frontend/src/styles.css`: Added `.suggestion-panel-wrapper` and `.mobile-only` responsive rules
+
+**Decisions made:**
+- ReviewPage changes minimal: only added `ReviewPageProps` interface and used `propSessionId ?? getSessionIdFromUrl()` pattern
+- EditorPage uses Fetch API for polling and export (not XHR) — simpler for JSON endpoints
+- Polling interval is 5000ms (5 seconds) while `session.status === 'proofreading'`
+- Export modal uses simple state-driven rendering; selected reference style stored in state
+- SuggestionPanel receives sections from EditorPage state (fetched once on mount, updated via polling)
+- Mobile responsive: suggestion panel hidden on <768px unless `.show` class applied via toggle button
+- All ReviewPage operations (accept, reject, edit, instruct, split, merge, add) remain unchanged
+
+**Context for next task (Task 011 — InsightsPage):**
+- EditorPage is complete and integrated with ReviewPage + SuggestionPanel
+- Insights button in EditorPage toolbar navigates to `/insights/:sessionId`
+- Task 011 must build InsightsPage that fetches GET /api/sessions/:sessionId/insights
+- Backend insights endpoint (Task 013) is not yet implemented
+- For sequence: should implement Task 013 before Task 011 to have a working API
+
+**Open questions:** None. All acceptance criteria met.
