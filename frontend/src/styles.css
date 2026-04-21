@@ -1458,6 +1458,31 @@ p {
   }
 }
 
+/* Editor page responsive */
+.suggestion-panel-wrapper {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .suggestion-panel-wrapper {
+    display: flex;
+  }
+}
+
+.suggestion-panel-wrapper.show {
+  display: flex;
+}
+
+.mobile-only {
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
