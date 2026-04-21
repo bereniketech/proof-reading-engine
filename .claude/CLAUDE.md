@@ -9,7 +9,7 @@ Layer 3 Tools: `tools/` — deterministic scripts. API keys in `.env`. Never sto
 Feature: editorial-intelligence-ui
 Spec: .spec/editorial-intelligence-ui/requirements.md, .spec/editorial-intelligence-ui/design.md
 Tasks: .spec/editorial-intelligence-ui/tasks/
-Current task: .spec/editorial-intelligence-ui/tasks/task-008.md
+Current task: .spec/editorial-intelligence-ui/tasks/task-010.md
 Branch: main
 
 ## Build Order (remaining)
@@ -25,9 +25,9 @@ Branch: main
 | 8 | Task 015 | `task-015.md` | Mobile responsiveness audit (375px/768px) |
 | 9 | Task 016 | `task-016.md` | E2E Playwright tests |
 
-## Status Snapshot (2026-04-19)
+## Status Snapshot (2026-04-21)
 **Backend:** production-ready. Upload, parse, proofread, sections CRUD, PDF export all complete. Missing: insights endpoint, user profile endpoint.
-**Frontend:** ~30% complete. Done: LoginPage, AppShell+Layout, DocumentCard, SectionCard (legacy). Stubs: DashboardPage, EditorPage, InsightsPage, ProfilePage. Missing: SuggestionPanel component entirely.
+**Frontend:** ~35% complete. Done: LoginPage, AppShell+Layout, DocumentCard, SectionCard (legacy), **DashboardPage (Task 008), SuggestionPanel (Task 009)**. Stubs: EditorPage, InsightsPage, ProfilePage. 
 **Tests:** backend unit tests exist; Playwright suite empty.
 **Mobile:** not yet audited.
 
