@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { DocumentCard, type SessionListItem } from '../components/DocumentCard';
-import { DOCUMENT_TYPES, MAX_FILE_SIZE_BYTES, ACCEPTED_EXTENSIONS, apiBaseUrl, validateUploadFile, formatBytes, getFileExtension, isUploadSuccessResponse } from '../lib/constants';
+import { DOCUMENT_TYPES, apiBaseUrl, validateUploadFile, formatBytes, isUploadSuccessResponse } from '../lib/constants';
 
 export function DashboardPage(): JSX.Element {
   const { session } = useAuth();

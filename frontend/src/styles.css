@@ -1492,3 +1492,43 @@ p {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Insights page responsive grid */
+.insights-bento { grid-template-columns: 1fr; }
+@media (min-width: 768px) { .insights-bento { grid-template-columns: repeat(12, 1fr); } }
+.insights-col-8 { grid-column: span 1; }
+.insights-col-4 { grid-column: span 1; }
+@media (min-width: 768px) {
+  .insights-col-8 { grid-column: span 8; }
+  .insights-col-4 { grid-column: span 4; }
+}
+
+/* Profile page responsive grid */
+.profile-grid { grid-template-columns: 1fr; }
+@media (min-width: 768px) { .profile-grid { grid-template-columns: repeat(12, 1fr); } }
+.profile-col-6, .profile-col-4, .profile-col-8, .profile-col-12 { grid-column: span 1; }
+@media (min-width: 768px) {
+  .profile-col-6 { grid-column: span 6; }
+  .profile-col-4 { grid-column: span 4; }
+  .profile-col-8 { grid-column: span 8; }
+  .profile-col-12 { grid-column: span 12; }
+}
+
+/* Global mobile responsiveness fixes */
+body { overflow-x: hidden; }
+
+/* Bottom nav spacing on mobile */
+@media (max-width: 767px) {
+  .main-content main { padding-bottom: 4.5rem; }
+}
+
+/* Prevent text overflow in sections */
+.section-text { overflow-wrap: break-word; word-break: break-word; }
+
+/* Toolbar wrap on narrow screens */
+.editor-toolbar { flex-wrap: wrap; gap: 0.5rem; }
+
+/* Login accent card — hide on very small screens */
+@media (max-width: 480px) {
+  .login-accent-card { display: none; }
+}

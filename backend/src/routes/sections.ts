@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminSupabaseClient, createUserScopedSupabaseClient } from '../lib/supabase.js';
 import { applySectionInstruction } from '../services/openai.js';
 import { matchReferencesToSections, NoReferencesSectionError } from '../services/reference-matcher.js';
@@ -57,9 +58,9 @@ const uuidV4LikePattern =
 const MAX_SECTION_TEXT_LENGTH = 100_000;
 
 const router = Router();
-let adminClient: any;
+let adminClient: SupabaseClient | null = null;
 
-function getAdminClient(): any {
+function getAdminClient(): SupabaseClient {
   if (!adminClient) {
     adminClient = createAdminSupabaseClient();
   }

@@ -9,7 +9,7 @@ interface AuthenticatedUser {
 // Lazy initialization to avoid requiring env vars at module load time
 let supabaseUrl: string | undefined;
 let issuer: string | undefined;
-let jwks: any;
+let jwks: ReturnType<typeof createRemoteJWKSet> | undefined;
 
 function initializeAuth(): void {
   if (!supabaseUrl) {
@@ -50,6 +50,11 @@ function unauthorized(response: Response): void {
 export async function verifySupabaseJwt(req: Request, res: Response, next: NextFunction): Promise<void> {
   // Initialize on first request
   initializeAuth();
+
+  if (!jwks || !issuer) {
+    res.status(500).json({ success: false, error: 'Server not initialized' });
+    return;
+  }
 
   const token = getBearerToken(req.header('authorization'));
 

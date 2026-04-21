@@ -110,7 +110,7 @@ insightsRouter.get('/sessions/:id/insights', async (req: Request, res: Response)
   const accessToken = getVerifiedAccessToken(res);
   if (!user || !accessToken) { res.status(401).json({ success: false, error: 'Unauthorized' }); return; }
 
-  const { id } = req.params;
+  const id = typeof req.params.id === 'string' ? req.params.id : undefined;
   if (!id || !isUuid(id)) { res.status(400).json({ success: false, error: 'Invalid session ID' }); return; }
 
   const supabase = createUserScopedSupabaseClient(accessToken);

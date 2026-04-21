@@ -24,7 +24,7 @@ export function getFileExtension(fileName: string): string {
  */
 export function validateUploadFile(file: File): string | null {
   const extension = getFileExtension(file.name);
-  if (!ACCEPTED_EXTENSIONS.includes(extension as any)) {
+  if (!ACCEPTED_EXTENSIONS.includes(extension as 'docx' | 'pdf' | 'txt')) {
     return 'Unsupported file type. Please select a DOCX, PDF, or TXT file.';
   }
   if (file.size > MAX_FILE_SIZE_BYTES) {
@@ -49,15 +49,18 @@ export function formatBytes(bytes: number): string {
  * Type guard for upload success response
  */
 export function isUploadSuccessResponse(obj: unknown): obj is { success: true; data: { sessionId: string } } {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'success' in obj &&
-    obj.success === true &&
-    'data' in obj &&
-    typeof obj.data === 'object' &&
-    obj.data !== null &&
-    'sessionId' in obj.data &&
-    typeof (obj.data as any).sessionId === 'string'
-  );
+  if (
+    typeof obj !== 'object' ||
+    obj === null ||
+    !('success' in obj) ||
+    obj.success !== true ||
+    !('data' in obj) ||
+    typeof obj.data !== 'object' ||
+    obj.data === null ||
+    !('sessionId' in obj.data)
+  ) {
+    return false;
+  }
+  const data = obj.data as Record<string, unknown>;
+  return typeof data.sessionId === 'string';
 }

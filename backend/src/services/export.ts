@@ -249,7 +249,6 @@ async function generatePdfBuffer(_session: Session, sections: Section[], options
   let currentY = margins.top;
 
   let font: PDFFont;
-  let boldFont: PDFFont;
 
   try {
     const regularBytes = await loadFontBytes('NotoSans-Regular.ttf');
@@ -260,7 +259,7 @@ async function generatePdfBuffer(_session: Session, sections: Section[], options
   }
 
   // Use the same Unicode font for headings; differentiate by size only
-  boldFont = font;
+  const boldFont = font;
 
   const extractedReferences = extractReferenceSections(sections);
   const referenceEntries = extractedReferences.entries;
@@ -310,7 +309,7 @@ async function generatePdfBuffer(_session: Session, sections: Section[], options
 
     const textToUse = getSectionText(section);
 
-    let content: { type: 'heading' | 'paragraph'; text: string }[] = [];
+    const content: Array<{ type: 'heading' | 'paragraph'; text: string }> = [];
 
     if (section.section_type === 'heading' && section.heading_level !== null) {
       content.push({ type: 'heading', text: textToUse });
