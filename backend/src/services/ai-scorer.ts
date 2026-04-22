@@ -61,24 +61,32 @@ export function computeHeuristicScore(text: string): number {
   return Math.round((sentenceLengthVariance + burstiness + vocabularyRichness + punctuationPattern) / 4);
 }
 
-export async function scoreSectionWithAI(text: string, heuristicScore: number): Promise<number> {
+export interface ScoreSectionResult {
+  score: number;
+  humanizedText: string | null;
+}
+
+export async function scoreSectionWithAI(text: string, heuristicScore: number): Promise<ScoreSectionResult> {
   const client = getOpenAIClient();
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => controller.abort(), SCORE_TIMEOUT_MS);
 
   const systemPrompt = [
-    'You are an AI content detector.',
-    'Given a text passage and its heuristic AI-likelihood score (0-100), return a single integer 0-100',
-    'representing how likely the text was written by an AI (100 = definitely AI, 0 = definitely human).',
-    'Consider: uniform sentence structure, lack of personal voice, overly formal transitions, generic phrasing.',
-    'Return valid JSON only: {"score": number}',
+    'You are an AI content detector and editor.',
+    'Given a text passage and its heuristic AI-likelihood score (0-100):',
+    '1. Return a score integer 0-100 for how likely the text is AI-written (100=definitely AI, 0=definitely human).',
+    '   Consider: uniform sentence structure, lack of personal voice, overly formal transitions, generic phrasing.',
+    '2. If the score is 61 or above, also return a "humanized" field: rewrite the text to sound authentically human',
+    '   by varying sentence length, adding burstiness, enriching vocabulary, preserving meaning and domain terms.',
+    '   If the score is 60 or below, set "humanized" to null.',
+    'Return valid JSON only: {"score": number, "humanized": string | null}',
   ].join(' ');
 
   try {
     const completion = await client.chat.completions.create(
       {
         model: OPENAI_MODEL,
-        temperature: 0,
+        temperature: 0.3,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
@@ -92,19 +100,26 @@ export async function scoreSectionWithAI(text: string, heuristicScore: number): 
     );
 
     const content = completion.choices[0]?.message?.content ?? '';
-    const parsed = JSON.parse(content) as { score?: unknown };
+    const parsed = JSON.parse(content) as { score?: unknown; humanized?: unknown };
+
     const score = parsed.score;
     if (typeof score !== 'number' || !Number.isFinite(score)) {
       throw new Error('Invalid score from OpenAI');
     }
-    return Math.max(0, Math.min(100, Math.round(score)));
+
+    const clampedScore = Math.max(0, Math.min(100, Math.round(score)));
+    const humanized = typeof parsed.humanized === 'string' && parsed.humanized.trim().length > 0
+      ? parsed.humanized.trim()
+      : null;
+
+    return { score: clampedScore, humanizedText: humanized };
   } finally {
     clearTimeout(timeoutHandle);
   }
 }
 
-export async function scoreSection(text: string): Promise<number> {
+export async function scoreSection(text: string): Promise<ScoreSectionResult> {
   const heuristic = computeHeuristicScore(text);
-  const gpt = await scoreSectionWithAI(text, heuristic);
-  return Math.round(heuristic * 0.35 + gpt * 0.65);
+  const { score: gpt, humanizedText } = await scoreSectionWithAI(text, heuristic);
+  return { score: Math.round(heuristic * 0.35 + gpt * 0.65), humanizedText };
 }

@@ -55,8 +55,6 @@ interface SectionCardProps {
   readonly splitSectionHeadingLevel: number;
   readonly isSplittingSection: boolean;
   readonly splitSectionError: string | null;
-  readonly isHumanizing: boolean;
-  readonly humanizeError: string | null;
   readonly onEditedTextChange: (nextValue: string) => void;
   readonly onInstructionTextChange: (value: string) => void;
   readonly onApplyInstruction: () => Promise<void>;
@@ -72,7 +70,6 @@ interface SectionCardProps {
   readonly onSplitSectionTypeChange: (value: SectionType) => void;
   readonly onSplitSectionHeadingLevelChange: (value: number) => void;
   readonly onSplitSection: () => Promise<void>;
-  readonly onHumanize: () => void;
   readonly onUseHumanizedVersion: (text: string) => void;
 }
 
@@ -217,8 +214,6 @@ export function SectionCard({
   splitSectionHeadingLevel,
   isSplittingSection,
   splitSectionError,
-  isHumanizing,
-  humanizeError,
   onEditedTextChange,
   onInstructionTextChange,
   onApplyInstruction,
@@ -234,7 +229,6 @@ export function SectionCard({
   onSplitSectionTypeChange,
   onSplitSectionHeadingLevelChange,
   onSplitSection,
-  onHumanize,
   onUseHumanizedVersion,
 }: SectionCardProps) {
   const [activeTab, setActiveTab] = useState<'corrected' | 'diff' | 'summary' | 'humanized'>('corrected');
@@ -250,7 +244,6 @@ export function SectionCard({
   const hasSummary = section.change_summary !== null && section.change_summary.length > 0;
   const hasHumanized = section.humanized_text !== null;
   const isPending = section.status === 'pending' && section.corrected_text === null;
-  const showHumanizeButton = section.ai_score !== null && section.ai_score >= 61 && !hasHumanized;
   const linkedPositionSet = useMemo(
     () => new Set(linkedReferencePositions),
     [linkedReferencePositions],
@@ -271,72 +264,47 @@ export function SectionCard({
 
       <div className="section-block">
         <div className="section-tabs" role="tablist" aria-label="Section views">
-          <button
-            role="tab"
-            type="button"
-            aria-selected={activeTab === 'corrected'}
-            className={`section-tab${activeTab === 'corrected' ? ' section-tab--active' : ''}`}
-            onClick={() => setActiveTab('corrected')}
-          >
-            Corrected text
-          </button>
-          <button
-            role="tab"
-            type="button"
-            aria-selected={activeTab === 'diff'}
-            className={`section-tab${activeTab === 'diff' ? ' section-tab--active' : ''}`}
-            onClick={() => setActiveTab('diff')}
-          >
-            Inline diff
-          </button>
-          {hasSummary ? (
             <button
               role="tab"
               type="button"
-              aria-selected={activeTab === 'summary'}
-              className={`section-tab${activeTab === 'summary' ? ' section-tab--active' : ''}`}
-              onClick={() => setActiveTab('summary')}
+              aria-selected={activeTab === 'corrected'}
+              className={`section-tab${activeTab === 'corrected' ? ' section-tab--active' : ''}`}
+              onClick={() => setActiveTab('corrected')}
             >
-              Summary
+              Corrected text
             </button>
-          ) : null}
-          {hasHumanized ? (
             <button
               role="tab"
               type="button"
-              aria-selected={activeTab === 'humanized'}
-              className={`section-tab${activeTab === 'humanized' ? ' section-tab--active' : ''}`}
-              onClick={() => setActiveTab('humanized')}
+              aria-selected={activeTab === 'diff'}
+              className={`section-tab${activeTab === 'diff' ? ' section-tab--active' : ''}`}
+              onClick={() => setActiveTab('diff')}
             >
-              Humanized
+              Inline diff
             </button>
-          ) : null}
-        </div>
-
-        {showHumanizeButton ? (
-          <div className="humanize-row">
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={isPending || isHumanizing}
-              onClick={() => onHumanize()}
-            >
-              {isHumanizing ? (
-                <>
-                  <span className="button-spinner" aria-hidden="true" />
-                  Humanizing…
-                </>
-              ) : (
-                'Humanize'
-              )}
-            </button>
-            {humanizeError ? (
-              <p className="review-status-message review-status-message--error" role="alert">
-                {humanizeError}
-              </p>
+            {hasSummary ? (
+              <button
+                role="tab"
+                type="button"
+                aria-selected={activeTab === 'summary'}
+                className={`section-tab${activeTab === 'summary' ? ' section-tab--active' : ''}`}
+                onClick={() => setActiveTab('summary')}
+              >
+                Summary
+              </button>
             ) : null}
-          </div>
-        ) : null}
+            {hasHumanized ? (
+              <button
+                role="tab"
+                type="button"
+                aria-selected={activeTab === 'humanized'}
+                className={`section-tab${activeTab === 'humanized' ? ' section-tab--active' : ''}`}
+                onClick={() => setActiveTab('humanized')}
+              >
+                Humanized
+              </button>
+            ) : null}
+        </div>
 
         {activeTab === 'corrected' ? (
           <textarea

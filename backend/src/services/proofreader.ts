@@ -5,6 +5,7 @@ import {
 } from './languagetool.js';
 import { proofreadSectionWithOpenAI, type ProofreadResult as OpenAIProofreadResult } from './openai.js';
 import { scoreSection } from './ai-scorer.js';
+import type { ScoreSectionResult } from './ai-scorer.js';
 
 const DEFAULT_MAX_CONCURRENCY = 5;
 
@@ -25,7 +26,7 @@ type ProofreadResult = OpenAIProofreadResult | LanguageToolProofreadResult;
 interface ProofreaderRepository {
   getPendingSections: (sessionId: string) => Promise<SessionSectionRecord[]>;
   saveSectionProofreadResult: (sessionId: string, sectionId: string, result: ProofreadResult) => Promise<void>;
-  updateSectionAiScore: (sessionId: string, sectionId: string, aiScore: number) => Promise<void>;
+  updateSectionAiScore: (sessionId: string, sectionId: string, result: ScoreSectionResult) => Promise<void>;
   updateSessionStatus: (sessionId: string, status: SessionStatus) => Promise<void>;
 }
 
@@ -130,10 +131,15 @@ function createSupabaseProofreaderRepository(accessToken: string): ProofreaderRe
       }
     },
 
-    updateSectionAiScore: async (sessionId: string, sectionId: string, aiScore: number): Promise<void> => {
+    updateSectionAiScore: async (sessionId: string, sectionId: string, result: ScoreSectionResult): Promise<void> => {
+      const update: { ai_score: number; humanized_text?: string } = { ai_score: result.score };
+      if (result.humanizedText !== null) {
+        update.humanized_text = result.humanizedText;
+      }
+
       const { error } = await supabase
         .from('sections')
-        .update({ ai_score: aiScore })
+        .update(update)
         .eq('id', sectionId)
         .eq('session_id', sessionId);
 
@@ -181,8 +187,8 @@ async function scoreSectionAfterProofread(
   repository: ProofreaderRepository,
 ): Promise<void> {
   try {
-    const aiScore = await scoreSection(correctedText);
-    await repository.updateSectionAiScore(sessionId, sectionId, aiScore);
+    const result = await scoreSection(correctedText);
+    await repository.updateSectionAiScore(sessionId, sectionId, result);
   } catch (scoreError: unknown) {
     console.warn('AI scoring failed for section; score will remain null', {
       sessionId,

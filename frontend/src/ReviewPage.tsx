@@ -104,12 +104,6 @@ interface SplitSectionSuccessResponse {
   };
 }
 
-interface HumanizeSuccessResponse {
-  success: true;
-  data: SectionRecord;
-}
-
-type HumanizeResponse = HumanizeSuccessResponse | ApiErrorResponse;
 type MergeSectionsResponse = MergeSectionsSuccessResponse | ApiErrorResponse;
 type AddSectionResponse = AddSectionSuccessResponse | ApiErrorResponse;
 type SplitSectionResponse = SplitSectionSuccessResponse | ApiErrorResponse;
@@ -296,8 +290,6 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   const [splitSectionHeadingLevel, setSplitSectionHeadingLevel] = useState(2);
   const [splitSectionText, setSplitSectionText] = useState('');
   const [splitSectionError, setSplitSectionError] = useState<string | null>(null);
-  const [humanizingSectionId, setHumanizingSectionId] = useState<string | null>(null);
-  const [humanizeErrorBySectionId, setHumanizeErrorBySectionId] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -834,45 +826,6 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
     }
   };
 
-  const handleHumanize = async (sectionId: string): Promise<void> => {
-    if (!supabaseSession) return;
-
-    setHumanizeErrorBySectionId((current) => {
-      const next = { ...current };
-      delete next[sectionId];
-      return next;
-    });
-    setHumanizingSectionId(sectionId);
-
-    try {
-      const response = await fetch(
-        `${apiBaseUrl}/api/sections/${encodeURIComponent(sectionId)}/humanize`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${supabaseSession.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
-
-      const body = (await response.json()) as HumanizeResponse;
-      if (!response.ok || !body.success) {
-        throw new Error((body as ApiErrorResponse).error ?? 'Humanization failed.');
-      }
-
-      const updated = (body as HumanizeSuccessResponse).data;
-      updateSectionInPayload(updated);
-    } catch (err) {
-      setHumanizeErrorBySectionId((current) => ({
-        ...current,
-        [sectionId]: err instanceof Error ? err.message : 'Humanization failed. Please try again.',
-      }));
-    } finally {
-      setHumanizingSectionId(null);
-    }
-  };
-
   const handleUseHumanizedVersion = (sectionId: string, humanizedText: string): void => {
     setEditedTextBySectionId((current) => ({
       ...current,
@@ -1301,9 +1254,6 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
               onSplitSectionTypeChange={setSplitSectionType}
               onSplitSectionHeadingLevelChange={setSplitSectionHeadingLevel}
               onSplitSection={handleSplitSection}
-              isHumanizing={humanizingSectionId === activeSection.id}
-              humanizeError={humanizeErrorBySectionId[activeSection.id] ?? null}
-              onHumanize={() => handleHumanize(activeSection.id)}
               onUseHumanizedVersion={(text) => handleUseHumanizedVersion(activeSection.id, text)}
             />
           ) : (
