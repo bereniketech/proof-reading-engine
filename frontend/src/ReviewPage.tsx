@@ -307,6 +307,7 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
+  const [analysisOpen, setAnalysisOpen] = useState(false);
 
   const firstSectionSetRef = useRef(false);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -372,6 +373,9 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
         if (cancelledRef.current) return;
 
         if (!response.ok || !body.success) {
+          if (response.status === 404) {
+            window.localStorage.removeItem('editorial.lastEditorPath');
+          }
           setError((body as ApiErrorResponse).error ?? 'Failed to load session.');
           setIsLoading(false);
           return;
@@ -1114,18 +1118,17 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   }
 
   if (error) {
+    const isNotFound = error === 'Not found';
     return (
-      <div className="review-shell review-shell--centered">
-        <p className="review-status-message review-status-message--error" role="alert">
-          {error}
+      <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-on-surface-variant)' }}>
+        <span className="material-symbols-outlined" style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>
+          {isNotFound ? 'search_off' : 'error_outline'}
+        </span>
+        <p role="alert">
+          {isNotFound
+            ? <>Document not found. <a href="/dashboard" style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Upload a new document</a>.</>
+            : error}
         </p>
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => window.location.assign('/')}
-        >
-          ← Back to upload
-        </button>
       </div>
     );
   }
@@ -1267,40 +1270,33 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
       ) : null}
 
       {supabaseSession && sessionId ? (
-        <AIReviewPanel
-          sessionId={sessionId}
-          authToken={supabaseSession.access_token}
-          apiBaseUrl={apiBaseUrl}
-        />
-      ) : null}
-
-      {supabaseSession && sessionId ? (
-        <TonePanel
-          sessionId={sessionId}
-          authToken={supabaseSession.access_token}
-        />
-      ) : null}
-
-      {supabaseSession && sessionId ? (
-        <CompletenessPanel
-          sessionId={sessionId}
-          authToken={supabaseSession.access_token}
-          onAddSection={(title) => {
-            setAddSectionTitle(title);
-          }}
-        />
-      ) : null}
-
-      {supabaseSession && sessionId ? (
-        <CitationPanel
-          sessionId={sessionId}
-          authToken={supabaseSession.access_token}
-          apiBaseUrl={apiBaseUrl}
-          onScrollToSection={(sectionId) => {
-            const el = document.getElementById(`section-${sectionId}`);
-            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }}
-        />
+        <div className="analysis-toolbar">
+          <AIReviewPanel
+            sessionId={sessionId}
+            authToken={supabaseSession.access_token}
+            apiBaseUrl={apiBaseUrl}
+          />
+          <TonePanel
+            sessionId={sessionId}
+            authToken={supabaseSession.access_token}
+          />
+          <CompletenessPanel
+            sessionId={sessionId}
+            authToken={supabaseSession.access_token}
+            onAddSection={(title) => {
+              setAddSectionTitle(title);
+            }}
+          />
+          <CitationPanel
+            sessionId={sessionId}
+            authToken={supabaseSession.access_token}
+            apiBaseUrl={apiBaseUrl}
+            onScrollToSection={(sectionId) => {
+              const el = document.getElementById(`section-${sectionId}`);
+              el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
+          />
+        </div>
       ) : null}
 
       <div className="review-progress" aria-label="Review progress">

@@ -9,8 +9,7 @@ export function EditorPage() {
     return (
       <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-on-surface-variant)' }}>
         <span className="material-symbols-outlined" style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>edit_note</span>
-        <p>Open a document from the Dashboard to start editing.</p>
-        <button onClick={() => navigate('/dashboard')} style={{ marginTop: '1rem', padding: '0.625rem 1.25rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-outline-variant)', cursor: 'pointer', background: 'transparent', color: 'var(--color-on-surface)' }}>Go to Dashboard</button>
+        <p>Open a document from the <a href="/dashboard" style={{ color: 'var(--color-primary)', fontWeight: 600, textDecoration: 'none' }}>Dashboard</a> to start editing.</p>
       </div>
     );
   }

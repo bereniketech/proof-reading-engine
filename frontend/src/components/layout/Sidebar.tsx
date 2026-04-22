@@ -44,12 +44,6 @@ function getNavItems(pathname: string): NavItem[] {
       href: pathname.startsWith('/insights/') ? pathname : getStoredPath(LAST_INSIGHTS_PATH_KEY) ?? '/insights',
       isActive: (currentPathname) => currentPathname.startsWith('/insights'),
     },
-    {
-      icon: 'person',
-      label: 'Profile',
-      href: '/profile',
-      isActive: (currentPathname) => currentPathname.startsWith('/profile'),
-    },
   ];
 }
 
@@ -62,6 +56,8 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
 
   return (
     <aside
+      onClick={onToggleCollapse ? (e) => { if (e.target === e.currentTarget) onToggleCollapse(); } : undefined}
+      title={onToggleCollapse ? (collapsed ? 'Expand sidebar' : 'Collapse sidebar') : undefined}
       style={{
         width,
         minHeight: '100vh',
@@ -78,6 +74,7 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
         boxShadow: '0 16px 40px var(--color-shadow-card)',
         transition: 'width var(--duration-fast), padding var(--duration-fast)',
         overflow: 'visible',
+        cursor: onToggleCollapse ? 'pointer' : undefined,
       }}
     >
       {/* Logo row */}
@@ -172,47 +169,6 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
         </div>
       )}
 
-      {/* Collapse toggle — mounted on the right edge, vertically centred */}
-      {onToggleCollapse && (
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          style={{
-            position: 'absolute',
-            top: '50%',
-            right: '-1rem',
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '1.25rem',
-            height: '3rem',
-            borderRadius: '0 var(--radius-lg) var(--radius-lg) 0',
-            border: '1px solid var(--color-outline-variant)',
-            borderLeft: 'none',
-            cursor: 'pointer',
-            background: 'var(--color-surface-container-low)',
-            color: 'var(--color-on-surface-variant)',
-            boxShadow: '2px 0 6px rgba(0,0,0,0.08)',
-            zIndex: 41,
-            transition: 'background var(--duration-fast), color var(--duration-fast)',
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-container-highest)';
-            (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary)';
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-container-low)';
-            (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-on-surface-variant)';
-          }}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
-            {collapsed ? 'chevron_right' : 'chevron_left'}
-          </span>
-        </button>
-      )}
     </aside>
   );
 }

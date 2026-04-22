@@ -669,7 +669,8 @@ p {
   flex-direction: column;
   gap: 0.1rem;
   min-width: 0;
-  flex: 1;
+  flex: 0 0 auto;
+  max-width: 14rem;
 }
 
 .review-eyebrow {
@@ -677,6 +678,9 @@ p {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-primary-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .review-title {
@@ -691,15 +695,42 @@ p {
 .review-header-right {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  flex-shrink: 0;
+  gap: 0.5rem;
+  flex: 1;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .reference-style-picker {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.reference-style-picker .field-select {
+  width: auto;
+  min-height: unset;
+  padding: 0.3rem 0.5rem;
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+}
+
+/* Normalise every control in the header to the same height */
+.review-header-right .primary-button,
+.review-header-right .secondary-button,
+.review-header-right .export-tracked-btn,
+.review-header-right .chat-toggle-btn {
+  padding: 0.4rem 0.875rem;
+  min-height: unset;
+  font-size: var(--font-size-sm);
+  border-radius: var(--radius-md);
+  line-height: 1.4;
+}
+
+.review-header-right .reference-style-picker .field-select {
+  padding: 0.4rem 0.5rem;
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
 }
 
 .reference-style-picker span {
@@ -1596,6 +1627,21 @@ body { overflow-x: hidden; }
   color: #475569;
   margin-left: 0.375rem;
   vertical-align: middle;
+}
+
+/* Analysis toolbar — horizontal row of panel trigger buttons */
+.analysis-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+.analysis-toolbar > * {
+  margin: 0 !important;
+  flex-shrink: 0;
 }
 
 /* AI Review Panel */

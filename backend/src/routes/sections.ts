@@ -50,6 +50,8 @@ interface SectionRow {
   change_summary: string | null;
   ai_score: number | null;
   humanized_text: string | null;
+  reformatted_text: string | null;
+  reformat_type: string | null;
   status: SectionStatus;
   created_at: string;
   updated_at: string;
@@ -562,7 +564,7 @@ router.get('/sessions/:id', async (req: Request, res: Response) => {
   const { data: sections, error: sectionsError } = await supabase
     .from('sections')
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, reformatted_text, reformat_type, status, created_at, updated_at',
     )
     .eq('session_id', sessionId)
     .order('position', { ascending: true });
