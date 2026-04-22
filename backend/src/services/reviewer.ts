@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getLLMProvider } from './llm-provider.js';
 import { createAdminSupabaseClient } from '../lib/supabase.js';
 
 const REVIEW_TIMEOUT_MS = 60_000;
@@ -16,14 +16,6 @@ interface SectionSummary {
   section_type: string;
   corrected_text: string | null;
   original_text: string;
-}
-
-function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured');
-  }
-  return new OpenAI({ apiKey });
 }
 
 function buildDocumentText(sections: SectionSummary[]): string {
@@ -52,18 +44,18 @@ Respond with exactly this JSON structure:
 
 function parseReviewReport(content: string | null | undefined): ReviewReport {
   if (!content) {
-    throw new Error('OpenAI returned an empty response for document review');
+    throw new Error('LLM returned an empty response for document review');
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
   } catch {
-    throw new Error('OpenAI review response was not valid JSON');
+    throw new Error('LLM review response was not valid JSON');
   }
 
   if (!parsed || typeof parsed !== 'object') {
-    throw new Error('OpenAI review response must be a JSON object');
+    throw new Error('LLM review response must be a JSON object');
   }
 
   const candidate = parsed as {
@@ -79,7 +71,7 @@ function parseReviewReport(content: string | null | undefined): ReviewReport {
     !Array.isArray(candidate.weaknesses) ||
     !Array.isArray(candidate.recommendations)
   ) {
-    throw new Error('OpenAI review response is missing required fields');
+    throw new Error('LLM review response is missing required fields');
   }
 
   return {
@@ -113,7 +105,7 @@ export async function reviewDocument(
   const documentText = buildDocumentText(sections);
   const prompt = buildReviewPrompt(documentText);
 
-  const client = getOpenAIClient();
+  const llm = await getLLMProvider('review');
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => {
     controller.abort();
@@ -121,18 +113,12 @@ export async function reviewDocument(
 
   let report: ReviewReport;
   try {
-    const completion = await client.chat.completions.create(
-      {
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.3,
-      },
-      { signal: controller.signal },
+    const raw = await llm.chat(
+      [{ role: 'user', content: prompt }],
+      { temperature: 0.3, jsonMode: true, signal: controller.signal },
     );
-
-    const raw = completion.choices[0]?.message?.content;
-    report = parseReviewReport(raw);
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    report = parseReviewReport(cleaned);
   } finally {
     clearTimeout(timeoutHandle);
   }

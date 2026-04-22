@@ -13,13 +13,5 @@ export function EditorPage() {
     );
   }
 
-  return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 3.75rem)', overflow: 'hidden', width: '100%', minWidth: 0 }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          <ReviewPage sessionId={sessionId} />
-        </div>
-      </div>
-    </div>
-  );
+  return <ReviewPage sessionId={sessionId} />;
 }

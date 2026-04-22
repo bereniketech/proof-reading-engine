@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getLLMProvider } from './llm-provider.js';
 import { createAdminSupabaseClient } from '../lib/supabase.js';
 import {
   extractReferenceSections,
@@ -9,7 +9,6 @@ import {
 
 type ReferenceStyle = 'apa' | 'mla' | 'chicago' | 'ieee' | 'vancouver';
 
-const OPENAI_MODEL = 'gpt-4o';
 const MATCHER_TIMEOUT_MS = 60_000;
 const MAX_RETRY_ATTEMPTS = 1;
 const RETRY_DELAY_MS = 1_000;
@@ -103,20 +102,6 @@ export class NoReferencesSectionError extends Error {
   }
 }
 
-let openAIClient: OpenAI | null = null;
-
-function getOpenAIClient(): OpenAI {
-  if (openAIClient) {
-    return openAIClient;
-  }
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured');
-  }
-  openAIClient = new OpenAI({ apiKey });
-  return openAIClient;
-}
-
 function isRetryableError(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
@@ -206,7 +191,7 @@ function parseGptOutput(content: string | null | undefined, validPositions: Set<
 }
 
 async function callGpt(prompt: string): Promise<string> {
-  const client = getOpenAIClient();
+  const llm = await getLLMProvider('references');
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
@@ -216,28 +201,23 @@ async function callGpt(prompt: string): Promise<string> {
     }, MATCHER_TIMEOUT_MS);
 
     try {
-      const completion = await client.chat.completions.create(
-        {
-          model: OPENAI_MODEL,
-          temperature: 0,
-          response_format: { type: 'json_object' },
-          messages: [
-            {
-              role: 'system',
-              content:
-                'You are a citation analyst. Match body sections to the references they cite based on in-text citation markers.',
-            },
-            { role: 'user', content: prompt },
-          ],
-        },
-        { signal: controller.signal },
+      const content = await llm.chat(
+        [
+          {
+            role: 'system',
+            content:
+              'You are a citation analyst. Match body sections to the references they cite based on in-text citation markers.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        { temperature: 0, jsonMode: true, signal: controller.signal },
       );
 
-      const content = completion.choices[0]?.message?.content;
       if (!content) {
-        throw new Error('GPT returned an empty response');
+        throw new Error('LLM returned an empty response');
       }
-      return content;
+      const cleaned = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      return cleaned;
     } catch (error: unknown) {
       lastError = error;
       if (attempt === MAX_RETRY_ATTEMPTS || !isRetryableError(error)) {

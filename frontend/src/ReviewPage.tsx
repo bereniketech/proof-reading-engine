@@ -5,7 +5,7 @@ import { AIReviewPanel } from './components/AIReviewPanel';
 import { CompletenessPanel } from './components/CompletenessPanel';
 import { TonePanel } from './components/TonePanel';
 import { SectionCard } from './components/SectionCard';
-import { computeFKGradeLevel } from './lib/readability';
+import { computeReadabilityScore } from './lib/readability';
 import { AddSectionModal } from './components/AddSectionModal';
 import { ChatDrawer } from './components/ChatDrawer';
 import { CitationPanel } from './components/CitationPanel';
@@ -33,6 +33,7 @@ interface SessionRecord {
   id: string;
   filename: string;
   file_type: string;
+  document_type: string;
   status: string;
   created_at: string;
   updated_at: string;
@@ -1388,7 +1389,7 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
             <div id={`section-${activeSection.id}`}>
             <SectionCard
               section={activeSection}
-              fkGradeLevel={computeFKGradeLevel(activeSection.corrected_text ?? activeSection.original_text)}
+              fkGradeLevel={computeReadabilityScore(activeSection.corrected_text ?? activeSection.original_text, payload?.session.document_type)}
               editedText={getEditedText(activeSection)}
               isSaving={savingSectionId === activeSection.id}
               actionError={actionError}

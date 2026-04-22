@@ -132,6 +132,7 @@ function createSupabaseProofreaderRepository(accessToken: string): ProofreaderRe
     },
 
     updateSectionAiScore: async (sessionId: string, sectionId: string, result: ScoreSectionResult): Promise<void> => {
+      if (result.score === null) return;
       const update: { ai_score: number; humanized_text?: string } = { ai_score: result.score };
       if (result.humanizedText !== null) {
         update.humanized_text = result.humanizedText;

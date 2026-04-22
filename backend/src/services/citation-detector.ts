@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getLLMProvider } from './llm-provider.js';
 import { createAdminSupabaseClient } from '../lib/supabase.js';
 
 const CITATION_TIMEOUT_MS = 60_000;
@@ -44,14 +44,6 @@ function extractMatchingSnippet(text: string, pattern: RegExp): string {
   return text.slice(start, end).trim();
 }
 
-function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured');
-  }
-  return new OpenAI({ apiKey });
-}
-
 interface RawClaimFlag {
   section_id?: unknown;
   position?: unknown;
@@ -67,7 +59,7 @@ function parseClaimsResponse(content: string | null | undefined): ClaimFlag[] {
   try {
     parsed = JSON.parse(content);
   } catch {
-    throw new Error('OpenAI citation response was not valid JSON');
+    throw new Error('LLM citation response was not valid JSON');
   }
 
   if (!parsed || typeof parsed !== 'object') return [];
@@ -159,7 +151,7 @@ Return JSON only — no markdown outside JSON:
 
 Only include items where needs_citation is true.`;
 
-  const client = getOpenAIClient();
+  const llm = await getLLMProvider('citations');
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => {
     controller.abort();
@@ -167,18 +159,12 @@ Only include items where needs_citation is true.`;
 
   let claims: ClaimFlag[];
   try {
-    const completion = await client.chat.completions.create(
-      {
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.1,
-      },
-      { signal: controller.signal },
+    const raw = await llm.chat(
+      [{ role: 'user', content: prompt }],
+      { temperature: 0.1, jsonMode: true, signal: controller.signal },
     );
-
-    const raw = completion.choices[0]?.message?.content;
-    claims = parseClaimsResponse(raw);
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    claims = parseClaimsResponse(cleaned);
   } finally {
     clearTimeout(timeoutHandle);
   }

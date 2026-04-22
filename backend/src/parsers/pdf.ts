@@ -16,6 +16,41 @@ const KNOWN_SECTION_HEADINGS = new Set([
   'appendix', 'appendices', 'supplementary material',
 ]);
 
+const ARTICLES_PREPS = new Set([
+  'a', 'an', 'the', 'and', 'but', 'or', 'nor', 'for', 'so', 'yet',
+  'at', 'by', 'in', 'of', 'on', 'to', 'up', 'as', 'is', 'it',
+  'vs', 'via', 'per',
+]);
+
+function isTitleCase(text: string): boolean {
+  const words = text.split(/\s+/);
+  if (words.length < 2) {
+    return false;
+  }
+
+  let capitalizedContent = 0;
+  let contentWords = 0;
+
+  for (const [index, word] of words.entries()) {
+    const clean = word.replace(/[^A-Za-z]/g, '');
+    if (!clean) {
+      continue;
+    }
+
+    const lower = clean.toLowerCase();
+    const isContentWord = index === 0 || index === words.length - 1 || !ARTICLES_PREPS.has(lower);
+
+    if (isContentWord) {
+      contentWords += 1;
+      if (/^[A-Z]/.test(clean)) {
+        capitalizedContent += 1;
+      }
+    }
+  }
+
+  return contentWords > 0 && capitalizedContent / contentWords >= 0.75;
+}
+
 function isLikelyHeading(text: string): boolean {
   if (text.length === 0 || text.length > 120) {
     return false;
@@ -32,7 +67,16 @@ function isLikelyHeading(text: string): boolean {
 
   // Match known academic section headings (possibly with a subtitle after a colon/dash/paren)
   const normalized = (text.split(/[:(–-]/)[0] ?? '').trim().toLowerCase();
-  return KNOWN_SECTION_HEADINGS.has(normalized);
+  if (KNOWN_SECTION_HEADINGS.has(normalized)) {
+    return true;
+  }
+
+  // Title-case line with no terminal sentence punctuation — likely a document title or section heading
+  if (!text.endsWith('.') && !text.endsWith('?') && !text.endsWith('!') && isTitleCase(text)) {
+    return true;
+  }
+
+  return false;
 }
 
 export async function parsePdf(filePath: string): Promise<Section[]> {

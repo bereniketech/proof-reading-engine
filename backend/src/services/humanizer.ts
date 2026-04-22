@@ -1,22 +1,11 @@
-import OpenAI from 'openai';
+import { getLLMProvider } from './llm-provider.js';
 import { computeHeuristicScore } from './ai-scorer.js';
 
-const OPENAI_MODEL = 'gpt-4o';
 const HUMANIZE_TIMEOUT_MS = 60_000;
-
-let openAIClient: OpenAI | null = null;
-
-function getOpenAIClient(): OpenAI {
-  if (openAIClient) return openAIClient;
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY is not configured');
-  openAIClient = new OpenAI({ apiKey });
-  return openAIClient;
-}
 
 export async function humanizeSection(text: string, aiScore: number): Promise<string> {
   const heuristicScore = computeHeuristicScore(text);
-  const client = getOpenAIClient();
+  const llm = await getLLMProvider('humanization');
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => controller.abort(), HUMANIZE_TIMEOUT_MS);
 
@@ -33,24 +22,19 @@ export async function humanizeSection(text: string, aiScore: number): Promise<st
   ].join(' ');
 
   try {
-    const completion = await client.chat.completions.create(
-      {
-        model: OPENAI_MODEL,
-        temperature: 0.8,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `AI score: ${aiScore}/100. Heuristic score: ${heuristicScore}/100.\n\nText to humanize:\n${text}`,
-          },
-        ],
-      },
-      { signal: controller.signal },
+    const content = await llm.chat(
+      [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: `AI score: ${aiScore}/100. Heuristic score: ${heuristicScore}/100.\n\nText to humanize:\n${text}`,
+        },
+      ],
+      { temperature: 0.8, signal: controller.signal },
     );
 
-    const content = completion.choices[0]?.message?.content ?? '';
     if (!content.trim()) {
-      throw new Error('OpenAI returned empty humanization');
+      throw new Error('LLM returned empty humanization');
     }
     return content.trim();
   } finally {

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { ReadabilityResult } from '../lib/readability';
 
 type SectionType = 'heading' | 'paragraph';
 type SectionStatus = 'pending' | 'ready' | 'accepted' | 'rejected';
@@ -33,7 +34,7 @@ interface DiffChunk {
 
 interface SectionCardProps {
   readonly section: SectionCardSection;
-  readonly fkGradeLevel: number | null;
+  readonly fkGradeLevel: ReadabilityResult | null;
   readonly editedText: string;
   readonly isSaving: boolean;
   readonly actionError: string | null;
@@ -281,11 +282,12 @@ export function SectionCard({
         {fkGradeLevel !== null && (
           <span
             className="fk-badge"
-            title={`Flesch-Kincaid readability score: Grade ${fkGradeLevel}. Higher grade = harder to read. Grade 8–10 is typical for general audiences.`}
-            aria-label={`Readability: Grade ${fkGradeLevel}`}
+            title={`${fkGradeLevel.formulaLabel} readability — Grade ${fkGradeLevel.grade}. Higher grade = harder to read. "${fkGradeLevel.label}" is based on expected reading level for this document type.`}
+            aria-label={`Readability: ${fkGradeLevel.label}, Grade ${fkGradeLevel.grade}`}
           >
             <span className="meta-badge-label">Readability</span>
-            <span className="meta-badge-value">Grade {fkGradeLevel}</span>
+            <span className="meta-badge-value">Grade {fkGradeLevel.grade}</span>
+            <span className="meta-badge-band">{fkGradeLevel.label}</span>
           </span>
         )}
         <AiBadge score={section.ai_score} />

@@ -1,6 +1,5 @@
-import OpenAI from 'openai';
+import { getLLMProvider } from './llm-provider.js';
 
-const OPENAI_MODEL = 'gpt-4o';
 const OPENAI_TIMEOUT_MS = 20_000;
 const OPENAI_INSTRUCTION_TIMEOUT_MS = 60_000;
 const MAX_RETRY_ATTEMPTS = 1;
@@ -97,22 +96,6 @@ interface InstructionOptions {
   runInstruction?: (sectionText: string, instruction: string) => Promise<ProofreadResult>;
 }
 
-let openAIClient: OpenAI | null = null;
-
-function getOpenAIClient(): OpenAI {
-  if (openAIClient) {
-    return openAIClient;
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured');
-  }
-
-  openAIClient = new OpenAI({ apiKey });
-  return openAIClient;
-}
-
 function buildUserPrompt(section: ProofreadSectionInput): string {
   const sectionContext = [
     `Section type: ${section.sectionType ?? 'paragraph'}`,
@@ -151,17 +134,17 @@ function parseProofreadResult(content: string | null | undefined): ProofreadResu
   };
 }
 
-function isRetryableOpenAIError(error: unknown): boolean {
+function isRetryableLLMError(error: unknown): boolean {
   if (!error || typeof error !== 'object') {
     return false;
   }
 
-  const errorWithStatus = error as { status?: unknown; code?: unknown; name?: unknown };
-  if (errorWithStatus.status === 429 || errorWithStatus.code === 'rate_limit_exceeded') {
+  const e = error as { status?: unknown; code?: unknown; name?: unknown };
+  if (e.status === 429 || e.code === 'rate_limit_exceeded') {
     return true;
   }
 
-  return errorWithStatus.name === 'AbortError' || errorWithStatus.name === 'APIConnectionTimeoutError';
+  return e.name === 'AbortError' || e.name === 'APIConnectionTimeoutError';
 }
 
 async function delay(milliseconds: number): Promise<void> {
@@ -171,7 +154,7 @@ async function delay(milliseconds: number): Promise<void> {
 }
 
 async function runSingleOpenAIProofread(section: ProofreadSectionInput): Promise<ProofreadResult> {
-  const client = getOpenAIClient();
+  const llm = await getLLMProvider('proofreading');
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => {
     controller.abort();
@@ -180,31 +163,16 @@ async function runSingleOpenAIProofread(section: ProofreadSectionInput): Promise
   const systemPrompt = DOCUMENT_TYPE_SYSTEM_PROMPTS[section.documentType ?? 'general'] ?? SYSTEM_PROMPT;
 
   try {
-    const completion = await client.chat.completions.create(
-      {
-        model: OPENAI_MODEL,
-        temperature: 0.2,
-        response_format: {
-          type: 'json_object',
-        },
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
-          {
-            role: 'user',
-            content: buildUserPrompt(section),
-          },
-        ],
-      },
-      {
-        signal: controller.signal,
-      },
+    const content = await llm.chat(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: buildUserPrompt(section) },
+      ],
+      { temperature: 0.2, jsonMode: true, signal: controller.signal },
     );
 
-    const content = completion.choices[0]?.message?.content;
-    return parseProofreadResult(content);
+    const cleaned = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    return parseProofreadResult(cleaned);
   } finally {
     clearTimeout(timeoutHandle);
   }
@@ -214,28 +182,23 @@ async function runSingleInstructionApplication(
   sectionText: string,
   instruction: string,
 ): Promise<ProofreadResult> {
-  const client = getOpenAIClient();
+  const llm = await getLLMProvider('proofreading');
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => {
     controller.abort();
   }, OPENAI_INSTRUCTION_TIMEOUT_MS);
 
   try {
-    const completion = await client.chat.completions.create(
-      {
-        model: OPENAI_MODEL,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: INSTRUCTION_SYSTEM_PROMPT },
-          { role: 'user', content: `Section text:\n${sectionText}\n\nInstruction:\n${instruction}` },
-        ],
-      },
-      { signal: controller.signal },
+    const content = await llm.chat(
+      [
+        { role: 'system', content: INSTRUCTION_SYSTEM_PROMPT },
+        { role: 'user', content: `Section text:\n${sectionText}\n\nInstruction:\n${instruction}` },
+      ],
+      { temperature: 0.2, jsonMode: true, signal: controller.signal },
     );
 
-    const content = completion.choices[0]?.message?.content;
-    return parseProofreadResult(content);
+    const cleaned = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    return parseProofreadResult(cleaned);
   } finally {
     clearTimeout(timeoutHandle);
   }
@@ -256,7 +219,7 @@ export async function proofreadSectionWithOpenAI(
     } catch (error: unknown) {
       lastError = error;
 
-      if (attempt === maxRetryAttempts || !isRetryableOpenAIError(error)) {
+      if (attempt === maxRetryAttempts || !isRetryableLLMError(error)) {
         break;
       }
 
@@ -291,7 +254,7 @@ export async function applySectionInstruction(
     } catch (error: unknown) {
       lastError = error;
 
-      if (attempt === maxRetryAttempts || !isRetryableOpenAIError(error)) {
+      if (attempt === maxRetryAttempts || !isRetryableLLMError(error)) {
         break;
       }
 
@@ -314,6 +277,6 @@ export async function applySectionInstruction(
 
 export const openAIServiceInternals = {
   buildUserPrompt,
-  isRetryableOpenAIError,
+  isRetryableLLMError,
   parseProofreadResult,
 };

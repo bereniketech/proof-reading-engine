@@ -1,21 +1,5 @@
-import OpenAI from 'openai';
+import { getLLMProvider } from './llm-provider.js';
 import { createAdminSupabaseClient } from '../lib/supabase.js';
-
-let openAIClient: OpenAI | null = null;
-
-function getOpenAIClient(): OpenAI {
-  if (openAIClient) {
-    return openAIClient;
-  }
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured');
-  }
-
-  openAIClient = new OpenAI({ apiKey });
-  return openAIClient;
-}
 
 export interface SectionSuggestion {
   suggested_position: number;
@@ -67,16 +51,13 @@ Return JSON only — no markdown outside the JSON.
   "rationale": "<1-2 sentences explaining the placement choice>"
 }`;
 
-  const client = getOpenAIClient();
-  const completion = await client.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [{ role: 'user', content: prompt }],
-    response_format: { type: 'json_object' },
-    temperature: 0.4,
-  });
-
-  const raw = completion.choices[0]?.message?.content ?? '{}';
-  const parsed = JSON.parse(raw) as RawSuggestion;
+  const llm = await getLLMProvider('section');
+  const raw = await llm.chat(
+    [{ role: 'user', content: prompt }],
+    { temperature: 0.4, jsonMode: true },
+  );
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  const parsed = JSON.parse(cleaned || '{}') as RawSuggestion;
 
   const suggestedPosition =
     typeof parsed.suggested_position === 'number' && Number.isFinite(parsed.suggested_position)

@@ -21,6 +21,10 @@ function storeLastVisitedPath(pathname: string): void {
   }
 }
 
+function isFullbleedRoute(pathname: string): boolean {
+  return pathname.startsWith('/editor/') || pathname.startsWith('/insights/');
+}
+
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -67,7 +71,12 @@ export function AppShell() {
         <TopNav onMenuToggle={() => setSidebarOpen((current) => !current)} />
         <main
           className="app-main"
-          style={{
+          style={isFullbleedRoute(location.pathname) ? {
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          } : {
             flex: 1,
             overflowY: 'auto',
             padding: '1.5rem',

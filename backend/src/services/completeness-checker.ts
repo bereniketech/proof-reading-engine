@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getLLMProvider } from './llm-provider.js';
 import { createAdminSupabaseClient } from '../lib/supabase.js';
 
 const COMPLETENESS_TIMEOUT_MS = 60_000;
@@ -26,14 +26,6 @@ interface RawCompletenessResponse {
   optional_missing?: unknown;
 }
 
-function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured');
-  }
-  return new OpenAI({ apiKey });
-}
-
 function buildCompletenessPrompt(documentType: string, sectionSummary: string[]): string {
   return `You are a professional document structure analyst.
 
@@ -57,24 +49,24 @@ function parseCompletenessResponse(
   documentType: string,
 ): CompletenessResult {
   if (!content) {
-    throw new Error('OpenAI returned an empty response for completeness check');
+    throw new Error('LLM returned an empty response for completeness check');
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
   } catch {
-    throw new Error('OpenAI completeness response was not valid JSON');
+    throw new Error('LLM completeness response was not valid JSON');
   }
 
   if (!parsed || typeof parsed !== 'object') {
-    throw new Error('OpenAI completeness response must be a JSON object');
+    throw new Error('LLM completeness response must be a JSON object');
   }
 
   const candidate = parsed as RawCompletenessResponse;
 
   if (typeof candidate.completeness_score !== 'number') {
-    throw new Error('OpenAI completeness response is missing completeness_score');
+    throw new Error('LLM completeness response is missing completeness_score');
   }
 
   const toStringArray = (value: unknown): string[] => {
@@ -122,7 +114,7 @@ export async function checkCompleteness(
     });
 
   const prompt = buildCompletenessPrompt(documentType, sectionSummary);
-  const client = getOpenAIClient();
+  const llm = await getLLMProvider('completeness');
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => {
     controller.abort();
@@ -130,18 +122,12 @@ export async function checkCompleteness(
 
   let result: CompletenessResult;
   try {
-    const completion = await client.chat.completions.create(
-      {
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.2,
-      },
-      { signal: controller.signal },
+    const raw = await llm.chat(
+      [{ role: 'user', content: prompt }],
+      { temperature: 0.2, jsonMode: true, signal: controller.signal },
     );
-
-    const raw = completion.choices[0]?.message?.content;
-    result = parseCompletenessResponse(raw, documentType);
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    result = parseCompletenessResponse(cleaned, documentType);
   } finally {
     clearTimeout(timeoutHandle);
   }

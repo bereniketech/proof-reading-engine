@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { getLLMProvider } from './llm-provider.js';
 import { createAdminSupabaseClient } from '../lib/supabase.js';
 
 const TONE_TIMEOUT_MS = 60_000;
@@ -39,14 +39,6 @@ interface RawToneResponse {
   sections?: unknown;
 }
 
-function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured');
-  }
-  return new OpenAI({ apiKey });
-}
-
 function buildTonePrompt(
   sectionTexts: Array<{ id: string; position: number; text: string }>,
 ): string {
@@ -75,18 +67,18 @@ Return exactly this JSON structure:
 
 function parseToneResponse(content: string | null | undefined): ToneCheckResult {
   if (!content) {
-    throw new Error('OpenAI returned an empty response for tone check');
+    throw new Error('LLM returned an empty response for tone check');
   }
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(content);
   } catch {
-    throw new Error('OpenAI tone response was not valid JSON');
+    throw new Error('LLM tone response was not valid JSON');
   }
 
   if (!parsed || typeof parsed !== 'object') {
-    throw new Error('OpenAI tone response must be a JSON object');
+    throw new Error('LLM tone response must be a JSON object');
   }
 
   const candidate = parsed as RawToneResponse;
@@ -96,7 +88,7 @@ function parseToneResponse(content: string | null | undefined): ToneCheckResult 
     typeof candidate.consistency_score !== 'number' ||
     !Array.isArray(candidate.sections)
   ) {
-    throw new Error('OpenAI tone response is missing required fields');
+    throw new Error('LLM tone response is missing required fields');
   }
 
   const sections: SectionToneResult[] = candidate.sections
@@ -145,7 +137,7 @@ export async function runToneCheck(
     }));
 
   const prompt = buildTonePrompt(sectionTexts);
-  const client = getOpenAIClient();
+  const llm = await getLLMProvider('tone');
   const controller = new AbortController();
   const timeoutHandle = setTimeout(() => {
     controller.abort();
@@ -153,18 +145,12 @@ export async function runToneCheck(
 
   let result: ToneCheckResult;
   try {
-    const completion = await client.chat.completions.create(
-      {
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.2,
-      },
-      { signal: controller.signal },
+    const raw = await llm.chat(
+      [{ role: 'user', content: prompt }],
+      { temperature: 0.2, jsonMode: true, signal: controller.signal },
     );
-
-    const raw = completion.choices[0]?.message?.content;
-    result = parseToneResponse(raw);
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    result = parseToneResponse(cleaned);
   } finally {
     clearTimeout(timeoutHandle);
   }

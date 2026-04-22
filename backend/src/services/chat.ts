@@ -1,5 +1,4 @@
-import OpenAI from 'openai';
-import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import { getLLMProvider } from './llm-provider.js';
 import { createUserScopedSupabaseClient } from '../lib/supabase.js';
 
 const DOCUMENT_CONTEXT_CHAR_LIMIT = 12_000;
@@ -16,14 +15,6 @@ interface SectionContext {
   section_type: string;
   original_text: string;
   corrected_text: string | null;
-}
-
-function getOpenAIClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not configured');
-  }
-  return new OpenAI({ apiKey });
 }
 
 export function buildDocumentContext(sections: SectionContext[]): string {
@@ -82,26 +73,13 @@ DOCUMENT:
 ${documentContext}
 """`;
 
-  const messages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemPrompt },
-    ...history.map(
-      (m) => ({ role: m.role, content: m.content } as ChatCompletionMessageParam),
-    ),
-    { role: 'user', content: userMessage },
-  ];
-
-  const client = getOpenAIClient();
-  const stream = await client.chat.completions.create({
-    model: 'gpt-4o',
-    messages,
-    stream: true,
-    temperature: 0.5,
-  });
-
-  for await (const chunk of stream) {
-    const token = chunk.choices[0]?.delta?.content;
-    if (token) {
-      yield token;
-    }
-  }
+  const llm = await getLLMProvider('chat');
+  yield* llm.stream(
+    [
+      { role: 'system', content: systemPrompt },
+      ...history,
+      { role: 'user', content: userMessage },
+    ],
+    { temperature: 0.5 },
+  );
 }

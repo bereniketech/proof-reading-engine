@@ -33,9 +33,9 @@ describe('openai service internals', () => {
   });
 
   it('marks rate limit and timeout errors as retryable', () => {
-    assert.equal(openAIServiceInternals.isRetryableOpenAIError({ status: 429 }), true);
-    assert.equal(openAIServiceInternals.isRetryableOpenAIError({ name: 'AbortError' }), true);
-    assert.equal(openAIServiceInternals.isRetryableOpenAIError({ name: 'Error' }), false);
+    assert.equal(openAIServiceInternals.isRetryableLLMError({ status: 429 }), true);
+    assert.equal(openAIServiceInternals.isRetryableLLMError({ name: 'AbortError' }), true);
+    assert.equal(openAIServiceInternals.isRetryableLLMError({ name: 'Error' }), false);
   });
 });
 
