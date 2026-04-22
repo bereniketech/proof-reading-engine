@@ -34,6 +34,9 @@
 - `.kit/skills/data-backend/postgres-patterns`
 - `.kit/skills/performance/web-performance-optimization`
 - `.kit/skills/_studio/batch-tasks`
+- `.kit/skills/languages/typescript-pro`
+- `.kit/skills/data-science-ml/ai-engineer`
+- `.kit/skills/devops/terminal-cli-devops`
 
 ## Installed Agents
 - `.kit/agents/board/company-coo.md`
@@ -42,11 +45,13 @@
 - `.kit/agents/software-company/engineering/architect.md`
 - `.kit/agents/software-company/engineering/web-frontend-expert.md`
 - `.kit/agents/software-company/engineering/web-backend-expert.md`
+- `.kit/agents/software-company/engineering/software-developer-expert.md`
 - `.kit/agents/software-company/engineering/build-error-resolver.md`
 - `.kit/agents/software-company/engineering/doc-updater.md`
 - `.kit/agents/software-company/engineering/code-reviewer.md`
 - `.kit/agents/software-company/qa/security-reviewer.md`
 - `.kit/agents/software-company/qa/e2e-runner.md`
+- `.kit/agents/software-company/qa/test-expert.md`
 - `.kit/agents/software-company/data/database-reviewer.md`
 - `.kit/agents/software-company/design/ui-design-expert.md`
 
@@ -69,4 +74,19 @@
 - `.kit/rules/typescript/` — TypeScript-specific rules
 
 ## Active Task
-`.spec/tasks/task-002.md` — AI Detection & Humanization
+`.spec/tasks/task-002.md` — AI Detection & Humanization (in progress)
+Next: `.spec/tasks/task-003.md` through `task-012.md` — 10 product features
+
+## Feature Roadmap
+| Task | Feature | Priority |
+|------|---------|----------|
+| task-003 | Readability Score per Section (FK Grade) | Quick win |
+| task-004 | Independent AI Reviewer | Quick win |
+| task-005 | Tone & Audience Consistency Check | Quick win |
+| task-006 | Document Completeness Score | Product loop |
+| task-007 | Structured Section Insertion (AI-Guided) | Product loop |
+| task-008 | Reformat Existing Section | Product loop |
+| task-009 | Export with Track Changes (.docx) | Retention |
+| task-010 | Version Diffing & Quality Delta | Retention |
+| task-011 | Document Q&A Chat (streaming) | Complex |
+| task-012 | Citation & Claim Detector | Complex |
