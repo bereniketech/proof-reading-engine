@@ -115,3 +115,6 @@ New props: `aiScore`, `humanizedText`, `isHumanizing`, `humanizeError`, `onHuman
 - Per-sentence highlighting
 - Scoring history / audit trail
 - Third-party AI detection API integration
+
+Status: COMPLETE
+Completed: 2026-04-22T00:00:00Z

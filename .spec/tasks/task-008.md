@@ -1,7 +1,7 @@
 ---
 task: 008
 feature: reformat-section
-status: pending
+status: COMPLETE
 model: haiku
 supervisor: software-cto
 agent: web-backend-expert
@@ -418,7 +418,23 @@ describe('reformatSection', () => {
 ## Handoff to Next Task
 > Fill via `/task-handoff` after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `backend/src/db/migrations/008_reformat.sql` (created)
+- `backend/src/services/reformatter.ts` (created)
+- `backend/src/routes/sections.ts` (added POST /sections/:id/reformat route + import)
+- `frontend/src/components/SectionCard.tsx` (added reformatted_text/reformat_type fields, reformat props, Reformatted tab button + content panel, Reformat dropdown)
+- `frontend/src/ReviewPage.tsx` (added reformatted_text/reformat_type to SectionRecord, added reformattingById/reformatErrorById state, handleReformat handler, new SectionCard props)
+- `frontend/src/styles.css` (added reformat-controls, reformat-select, reformat-spinner, reformat-error, reformatted-pre CSS)
+
+**Decisions made:**
+- Used same OpenAI client singleton pattern as humanizer.ts (not the openai.ts export)
+- Auth follows the existing sections.ts pattern: getVerifiedAccessToken + getAuthenticatedUser + createUserScopedSupabaseClient
+- Reformat is non-destructive: only reformatted_text and reformat_type columns are written
+- Source text is corrected_text ?? original_text
+- Reformatted tab button only renders when reformatted_text is non-null
+
+**Context for next task:** Both backend and frontend TypeScript compile cleanly.
+**Open questions:** Migration 008_reformat.sql must be applied in Supabase dashboard before the route will work end-to-end.
+
+Status: COMPLETE
+Completed: 2026-04-22T00:00:00Z

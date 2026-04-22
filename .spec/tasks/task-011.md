@@ -1,7 +1,7 @@
 ---
 task: 011
 feature: document-qa-chat
-status: pending
+status: complete
 model: haiku
 supervisor: software-cto
 agent: web-backend-expert
@@ -684,7 +684,23 @@ describe('streamChatResponse', () => {
 ## Handoff to Next Task
 > Fill via `/task-handoff` after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `backend/src/db/migrations/009_chat_history.sql` (created)
+- `backend/src/services/chat.ts` (created)
+- `backend/src/routes/sessions-chat.ts` (created)
+- `backend/src/server.ts` (registered sessionsChatRouter)
+- `frontend/src/components/ChatDrawer.tsx` (created)
+- `frontend/src/ReviewPage.tsx` (added import, chatOpen state, toggle button, ChatDrawer JSX)
+- `frontend/src/styles.css` (added chat drawer CSS)
+
+**Decisions made:**
+- Used a standalone `sessions-chat.ts` router file (matching the sessions-tone.ts pattern) rather than modifying an existing sessions router, keeping files small and focused.
+- Chat service uses `createUserScopedSupabaseClient` with the caller's access token so RLS is enforced for all DB operations.
+- Migration numbered `009` (not `008`) to avoid collision with the existing `008_reformat.sql`.
+
+**Context for next task:** Chat history is persisted in `public.chat_messages` table protected by RLS. Streaming endpoint is at `POST /api/sessions/:id/chat`. History endpoint is at `GET /api/sessions/:id/chat/history`.
+
+**Open questions:** None.
+
+Status: COMPLETE
+Completed: 2026-04-22T00:00:00Z

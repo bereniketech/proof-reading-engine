@@ -14,6 +14,8 @@ export interface SectionCardSection {
   change_summary: string | null;
   ai_score: number | null;
   humanized_text: string | null;
+  reformatted_text: string | null;
+  reformat_type: string | null;
   status: SectionStatus;
 }
 
@@ -31,6 +33,7 @@ interface DiffChunk {
 
 interface SectionCardProps {
   readonly section: SectionCardSection;
+  readonly fkGradeLevel: number | null;
   readonly editedText: string;
   readonly isSaving: boolean;
   readonly actionError: string | null;
@@ -71,6 +74,11 @@ interface SectionCardProps {
   readonly onSplitSectionHeadingLevelChange: (value: number) => void;
   readonly onSplitSection: () => Promise<void>;
   readonly onUseHumanizedVersion: (text: string) => void;
+  readonly reformattedText: string | null;
+  readonly reformatType: string | null;
+  readonly isReformatting: boolean;
+  readonly reformatError: string | null;
+  readonly onReformat: (format: 'table' | 'bullet_list' | 'questionnaire' | 'summary_box') => void;
 }
 
 type AiBand = 'null' | 'human' | 'mixed' | 'ai';
@@ -190,6 +198,7 @@ function buildDiffChunks(originalText: string, editedText: string): DiffChunk[] 
 
 export function SectionCard({
   section,
+  fkGradeLevel,
   editedText,
   isSaving,
   actionError,
@@ -230,8 +239,13 @@ export function SectionCard({
   onSplitSectionHeadingLevelChange,
   onSplitSection,
   onUseHumanizedVersion,
+  reformattedText,
+  reformatType: _reformatType,
+  isReformatting,
+  reformatError,
+  onReformat,
 }: SectionCardProps) {
-  const [activeTab, setActiveTab] = useState<'corrected' | 'diff' | 'summary' | 'humanized'>('corrected');
+  const [activeTab, setActiveTab] = useState<'corrected' | 'diff' | 'summary' | 'humanized' | 'reformatted'>('corrected');
   const textareaId = `corrected-text-${section.id}`;
   const instructionId = `instruction-${section.id}`;
   const addSectionTextareaId = `add-section-${section.id}`;
@@ -254,6 +268,15 @@ export function SectionCard({
       <div className="section-detail-meta">
         <span className="section-detail-pos">Section #{section.position + 1}</span>
         <span className="section-detail-type">{section.section_type}</span>
+        {fkGradeLevel !== null && (
+          <span
+            className="fk-badge"
+            title={`Flesch-Kincaid Grade ${fkGradeLevel}`}
+            aria-label={`Reading level grade ${fkGradeLevel}`}
+          >
+            Grade {fkGradeLevel}
+          </span>
+        )}
         <AiBadge score={section.ai_score} />
       </div>
 
@@ -304,6 +327,17 @@ export function SectionCard({
                 Humanized
               </button>
             ) : null}
+            {reformattedText !== null ? (
+              <button
+                role="tab"
+                type="button"
+                aria-selected={activeTab === 'reformatted'}
+                className={`section-tab${activeTab === 'reformatted' ? ' section-tab--active' : ''}`}
+                onClick={() => setActiveTab('reformatted')}
+              >
+                Reformatted
+              </button>
+            ) : null}
         </div>
 
         {activeTab === 'corrected' ? (
@@ -350,6 +384,10 @@ export function SectionCard({
               Use this version
             </button>
           </div>
+        ) : activeTab === 'reformatted' && reformattedText !== null ? (
+          <div role="tabpanel" className="tab-content reformatted-content">
+            <pre className="reformatted-pre">{reformattedText}</pre>
+          </div>
         ) : (
           <div role="tabpanel">
             <p className="section-block-content section-block-content--summary">{section.change_summary}</p>
@@ -388,6 +426,32 @@ export function SectionCard({
             {instructionError}
           </p>
         ) : null}
+      </div>
+
+      <div className="section-block">
+        <div className="reformat-controls">
+          <select
+            className="reformat-select"
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value) {
+                onReformat(value as 'table' | 'bullet_list' | 'questionnaire' | 'summary_box');
+                e.target.value = '';
+              }
+            }}
+            disabled={isReformatting}
+            defaultValue=""
+            aria-label="Reformat section as"
+          >
+            <option value="" disabled>Reformat as…</option>
+            <option value="table">Table</option>
+            <option value="bullet_list">Bullet List</option>
+            <option value="questionnaire">Questionnaire</option>
+            <option value="summary_box">Summary Box</option>
+          </select>
+          {isReformatting ? <span className="reformat-spinner">Reformatting…</span> : null}
+          {reformatError ? <span className="reformat-error" role="alert">{reformatError}</span> : null}
+        </div>
       </div>
 
       {hasReferencesSection && isReferenceSection ? (

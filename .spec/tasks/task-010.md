@@ -1,7 +1,8 @@
 ---
 task: 010
 feature: version-diffing
-status: pending
+status: COMPLETE
+completed: 2026-04-22T00:00:00Z
 model: haiku
 supervisor: software-cto
 agent: web-backend-expert

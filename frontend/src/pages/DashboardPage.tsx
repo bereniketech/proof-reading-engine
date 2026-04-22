@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { DocumentCard, type SessionListItem } from '../components/DocumentCard';
+import { DiffPanel } from '../components/DiffPanel';
 import { DOCUMENT_TYPES, apiBaseUrl, validateUploadFile, formatBytes, isUploadSuccessResponse } from '../lib/constants';
 
 export function DashboardPage(){
@@ -20,6 +21,10 @@ export function DashboardPage(){
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
+
+  // Diff state
+  const [diffBaseId, setDiffBaseId] = useState<string | null>(null);
+  const [compareTarget, setCompareTarget] = useState<string | null>(null);
 
   // Fetch sessions on mount
   const fetchSessions = useCallback(async (): Promise<void> => {
@@ -257,16 +262,38 @@ export function DashboardPage(){
             <p style={{ margin: 0 }}>Upload your first document to get started.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
-            {sessions.map((s) => (
-              <DocumentCard
-                key={s.id}
-                session={s}
-                onClick={() => navigate(`/editor/${s.id}`)}
-                onDeleted={(id) => setSessions((prev) => prev.filter((x) => x.id !== id))}
+          <>
+            {diffBaseId && compareTarget && session && (
+              <DiffPanel
+                baseSessionId={diffBaseId}
+                compareSessionId={compareTarget}
+                authToken={session.access_token}
+                onClose={() => { setDiffBaseId(null); setCompareTarget(null); }}
               />
-            ))}
-          </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
+              {sessions.map((s, index) => (
+                <div key={s.id}>
+                  <DocumentCard
+                    session={s}
+                    onClick={() => navigate(`/editor/${s.id}`)}
+                    onDeleted={(id) => setSessions((prev) => prev.filter((x) => x.id !== id))}
+                  />
+                  {index < sessions.length - 1 && (
+                    <button
+                      className="compare-btn"
+                      onClick={() => {
+                        setDiffBaseId(s.id);
+                        setCompareTarget(sessions[index + 1].id);
+                      }}
+                    >
+                      Compare with previous
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

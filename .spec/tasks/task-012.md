@@ -603,7 +603,24 @@ describe('detectClaims', () => {
 ## Handoff to Next Task
 > This is the final feature task. Fill via `/task-handoff` after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
+**Files changed:**
+- `backend/src/db/migrations/009_citations.sql` (created)
+- `backend/src/services/citation-detector.ts` (created)
+- `backend/src/routes/sessions-citations.ts` (created)
+- `backend/src/server.ts` (modified — registered sessionsCitationsRouter)
+- `frontend/src/components/CitationPanel.tsx` (created)
+- `frontend/src/ReviewPage.tsx` (modified — CitationPanel import + JSX + section id wrapper)
+- `frontend/src/styles.css` (modified — Citation Panel CSS)
+
+**Decisions made:**
+- Used `createAdminSupabaseClient` in service (consistent with all other services)
+- Used `getAuthenticatedUser`/`getVerifiedAccessToken`/`createUserScopedSupabaseClient` in route (consistent with all other routes)
+- Added `apiBaseUrl` prop to CitationPanel (consistent with AIReviewPanel pattern)
+- SectionCard wrapped in `<div id="section-{id}">` only in the active section render (single SectionCard is rendered at a time)
+- Added AbortController timeout (60s) consistent with tone-checker and reviewer patterns
+
 **Context for next task:** _(none — this is the last task)_
-**Open questions:** _(fill via /task-handoff)_
+**Open questions:** _(none)_
+
+Status: COMPLETE
+Completed: 2026-04-22T00:00:00Z

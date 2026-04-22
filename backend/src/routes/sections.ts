@@ -5,6 +5,8 @@ import { createAdminSupabaseClient, createUserScopedSupabaseClient } from '../li
 import { applySectionInstruction } from '../services/openai.js';
 import { matchReferencesToSections, suggestReferencesForSection, NoReferencesSectionError } from '../services/reference-matcher.js';
 import { humanizeSection } from '../services/humanizer.js';
+import { reformatSection, type ReformatType } from '../services/reformatter.js';
+import { suggestSection, insertSection } from '../services/section-inserter.js';
 
 type SectionType = 'heading' | 'paragraph';
 type InsertPlacement = 'above' | 'below';
@@ -1220,6 +1222,187 @@ router.post('/sections/:id/humanize', async (req: Request, res: Response) => {
     success: true,
     data: updatedSection,
   });
+});
+
+// POST /api/sections/:id/reformat
+router.post('/sections/:id/reformat', async (req: Request, res: Response) => {
+  const authToken = getVerifiedAccessToken(res);
+  const authenticatedUser = getAuthenticatedUser(res);
+  const sectionId = typeof req.params.id === 'string' ? req.params.id : '';
+
+  if (!authToken || !authenticatedUser) {
+    unauthorized(res);
+    return;
+  }
+
+  if (!isUuid(sectionId)) {
+    badRequest(res, 'Invalid section id format.');
+    return;
+  }
+
+  const body = req.body as Record<string, unknown> | undefined;
+  const format = typeof body?.format === 'string' ? (body.format as ReformatType) : null;
+  const VALID_FORMATS: ReformatType[] = ['table', 'bullet_list', 'questionnaire', 'summary_box'];
+
+  if (!format || !VALID_FORMATS.includes(format)) {
+    badRequest(res, 'format is required');
+    return;
+  }
+
+  const supabase = createUserScopedSupabaseClient(authToken);
+  const { data: section, error: fetchError } = await supabase
+    .from('sections')
+    .select(
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
+    )
+    .eq('id', sectionId)
+    .maybeSingle();
+
+  if (fetchError) {
+    serverError(res, 'Failed to fetch section.');
+    return;
+  }
+
+  if (!section) {
+    const ownerId = await getSectionOwnerId(sectionId);
+    if (ownerId && ownerId !== authenticatedUser.id) {
+      forbidden(res);
+      return;
+    }
+    notFound(res);
+    return;
+  }
+
+  const typedSection = section as SectionRow;
+  const sourceText = typedSection.corrected_text ?? typedSection.original_text;
+
+  let reformatted: string;
+  try {
+    reformatted = await reformatSection(sourceText, format);
+  } catch (aiError) {
+    console.error('reformatSection failed', {
+      sectionId,
+      format,
+      error: aiError instanceof Error ? aiError.message : 'Unknown error',
+    });
+    serverError(res, 'Reformat failed. Please try again.');
+    return;
+  }
+
+  const { data: updatedSection, error: updateError } = await supabase
+    .from('sections')
+    .update({ reformatted_text: reformatted, reformat_type: format })
+    .eq('id', sectionId)
+    .select(
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, reformatted_text, reformat_type, status, created_at, updated_at',
+    )
+    .maybeSingle();
+
+  if (updateError || !updatedSection) {
+    serverError(res, 'Failed to save reformatted text.');
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: updatedSection,
+  });
+});
+
+// POST /api/sessions/:id/sections/suggest
+router.post('/sessions/:id/sections/suggest', async (req: Request, res: Response) => {
+  const authToken = getVerifiedAccessToken(res);
+  const authenticatedUser = getAuthenticatedUser(res);
+  const sessionId = typeof req.params.id === 'string' ? req.params.id : '';
+
+  if (!authToken || !authenticatedUser) {
+    unauthorized(res);
+    return;
+  }
+
+  if (!isUuid(sessionId)) {
+    badRequest(res, 'Invalid session id format.');
+    return;
+  }
+
+  const body = req.body as Record<string, unknown> | undefined;
+  const title = typeof body?.title === 'string' ? body.title.trim() : '';
+
+  if (title.length === 0) {
+    badRequest(res, 'title is required');
+    return;
+  }
+
+  const ownerId = await getSessionOwnerId(sessionId);
+  if (!ownerId) {
+    notFound(res);
+    return;
+  }
+
+  if (ownerId !== authenticatedUser.id) {
+    forbidden(res);
+    return;
+  }
+
+  const sections = await fetchOrderedSessionSections(sessionId);
+
+  try {
+    const suggestion = await suggestSection(sessionId, title, sections);
+    res.status(200).json({ success: true, data: suggestion });
+  } catch (err) {
+    serverError(res, err instanceof Error ? err.message : 'Suggestion failed');
+  }
+});
+
+// POST /api/sessions/:id/sections/insert
+router.post('/sessions/:id/sections/insert', async (req: Request, res: Response) => {
+  const authToken = getVerifiedAccessToken(res);
+  const authenticatedUser = getAuthenticatedUser(res);
+  const sessionId = typeof req.params.id === 'string' ? req.params.id : '';
+
+  if (!authToken || !authenticatedUser) {
+    unauthorized(res);
+    return;
+  }
+
+  if (!isUuid(sessionId)) {
+    badRequest(res, 'Invalid session id format.');
+    return;
+  }
+
+  const body = req.body as Record<string, unknown> | undefined;
+  const title = typeof body?.title === 'string' ? body.title.trim() : '';
+  const rawPosition = body?.position;
+  const content = typeof body?.content === 'string' ? body.content : '';
+
+  if (title.length === 0) {
+    badRequest(res, 'title is required');
+    return;
+  }
+
+  const position =
+    typeof rawPosition === 'number' && Number.isFinite(rawPosition) && rawPosition >= 0
+      ? Math.trunc(rawPosition)
+      : 0;
+
+  const ownerId = await getSessionOwnerId(sessionId);
+  if (!ownerId) {
+    notFound(res);
+    return;
+  }
+
+  if (ownerId !== authenticatedUser.id) {
+    forbidden(res);
+    return;
+  }
+
+  try {
+    await insertSection(sessionId, title, position, content);
+    const finalSections = await fetchOrderedSessionSections(sessionId);
+    res.status(200).json({ success: true, data: { session_id: sessionId, sections: finalSections } });
+  } catch (err) {
+    serverError(res, err instanceof Error ? err.message : 'Insert failed');
+  }
 });
 
 export { router as sectionsRouter };

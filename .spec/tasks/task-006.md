@@ -1,7 +1,7 @@
 ---
 task: 006
 feature: completeness-score
-status: pending
+status: complete
 model: haiku
 supervisor: software-cto
 agent: web-backend-expert
@@ -542,9 +542,25 @@ describe('checkCompleteness', () => {
 ---
 
 ## Handoff to Next Task
-> Fill via `/task-handoff` after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+Status: COMPLETE
+Completed: 2026-04-22T00:00:00Z
+
+**Files changed:**
+- `backend/src/db/migrations/007_completeness.sql` — created (ADD COLUMN completeness_score + completeness_report)
+- `backend/src/services/completeness-checker.ts` — created (checkCompleteness with cache, GPT-4o, robust parsing, timeout)
+- `backend/src/routes/sessions-completeness.ts` — created (GET /api/sessions/:id/completeness, ownership check, user-scoped client)
+- `backend/src/server.ts` — registered sessionsCompletenessRouter
+- `frontend/src/components/CompletenessPanel.tsx` — created
+- `frontend/src/styles.css` — appended completeness CSS
+- `frontend/src/ReviewPage.tsx` — added CompletenessPanel import, addSectionTitle state, and CompletenessPanel JSX
+
+**Decisions made:**
+- Route lives in its own file `sessions-completeness.ts` (not sessions.ts) to match the pattern of sessions-tone.ts
+- Uses createAdminSupabaseClient for DB writes (caching), createUserScopedSupabaseClient for the route's read (ownership enforcement via RLS)
+- OpenAI client constructed inline (same pattern as tone-checker.ts) with 60s timeout + AbortController
+- JSON response is robustly parsed with type guards; no `any` used
+
+**Context for next task (task-007):**
+- `addSectionTitle` state is already declared in ReviewPage and wired to `onAddSection` callback
+- Task-007 should replace the `setAddSectionTitle(title)` handler with logic to open the Add Section modal pre-filled with the given title

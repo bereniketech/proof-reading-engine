@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import { Router } from 'express';
 import { exportSession, type ReferenceStyle } from '../services/export.js';
+import { createUserScopedSupabaseClient } from '../lib/supabase.js';
+import { buildTrackedChangesDocx } from '../services/track-changes-exporter.js';
 
 interface AuthenticatedUser {
   id: string;
@@ -80,6 +82,11 @@ function serverError(response: Response, error: string): void {
   });
 }
 
+function getVerifiedAccessToken(response: Response): string | null {
+  const token = response.locals.accessToken;
+  return typeof token === 'string' && token.length > 0 ? token : null;
+}
+
 router.post('/export/:sessionId', async (req: Request, res: Response) => {
   const authenticatedUser = getAuthenticatedUser(res);
   const sessionId = typeof req.params.sessionId === 'string' ? req.params.sessionId : '';
@@ -118,6 +125,67 @@ router.post('/export/:sessionId', async (req: Request, res: Response) => {
     } else {
       serverError(res, 'Unknown error occurred during PDF export');
     }
+  }
+});
+
+// GET /api/sessions/:id/export/docx-tracked
+router.get('/sessions/:id/export/docx-tracked', async (req: Request, res: Response): Promise<void> => {
+  const authenticatedUser = getAuthenticatedUser(res);
+  const accessToken = getVerifiedAccessToken(res);
+
+  if (!authenticatedUser || !accessToken) {
+    unauthorized(res);
+    return;
+  }
+
+  const sessionId = typeof req.params.id === 'string' ? req.params.id : '';
+  if (!isUuid(sessionId)) {
+    badRequest(res, 'Invalid session id format.');
+    return;
+  }
+
+  const supabase = createUserScopedSupabaseClient(accessToken);
+
+  const { data: session, error: sessionError } = await supabase
+    .from('sessions')
+    .select('id, user_id, filename')
+    .eq('id', sessionId)
+    .single();
+
+  if (sessionError || !session) {
+    notFound(res);
+    return;
+  }
+
+  if (session.user_id !== authenticatedUser.id) {
+    res.status(403).json({ success: false, error: 'Forbidden' });
+    return;
+  }
+
+  const { data: sections, error: sectionsError } = await supabase
+    .from('sections')
+    .select('position, section_type, heading_level, original_text, corrected_text, status')
+    .eq('session_id', sessionId)
+    .order('position', { ascending: true });
+
+  if (sectionsError) {
+    serverError(res, sectionsError.message);
+    return;
+  }
+
+  try {
+    const buffer = await buildTrackedChangesDocx(sections ?? []);
+    const safeFilename = (session.filename as string).replace(/\.[^.]+$/, '') + '-tracked.docx';
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (err) {
+    serverError(res, err instanceof Error ? err.message : 'Failed to generate docx.');
   }
 });
 

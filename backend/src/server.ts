@@ -13,6 +13,12 @@ import { insightsRouter } from './routes/insights.js';
 import { profileRouter } from './routes/profile.js';
 import { sectionsRouter } from './routes/sections.js';
 import { sessionsListRouter } from './routes/sessions-list.js';
+import { sessionsReviewRouter } from './routes/sessions-review.js';
+import { sessionsCompletenessRouter } from './routes/sessions-completeness.js';
+import { sessionsToneRouter } from './routes/sessions-tone.js';
+import { sessionsDiffRouter } from './routes/sessions-diff.js';
+import { sessionsChatRouter } from './routes/sessions-chat.js';
+import { sessionsCitationsRouter } from './routes/sessions-citations.js';
 import { uploadRouter } from './routes/upload.js';
 
 const app = express();
@@ -42,6 +48,12 @@ app.use('/api', profileRouter);
 app.use('/api', uploadRouter);
 app.use('/api', sectionsRouter);
 app.use('/api', sessionsListRouter);
+app.use('/api', sessionsReviewRouter);
+app.use('/api', sessionsCompletenessRouter);
+app.use('/api', sessionsToneRouter);
+app.use('/api', sessionsDiffRouter);
+app.use('/api', sessionsChatRouter);
+app.use('/api', sessionsCitationsRouter);
 
 app.listen(port, () => {
   console.warn(`Backend listening on http://localhost:${port}`);

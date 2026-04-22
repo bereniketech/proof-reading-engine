@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Session as SupabaseSession } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
+import { AIReviewPanel } from './components/AIReviewPanel';
+import { CompletenessPanel } from './components/CompletenessPanel';
+import { TonePanel } from './components/TonePanel';
 import { SectionCard } from './components/SectionCard';
+import { computeFKGradeLevel } from './lib/readability';
+import { AddSectionModal } from './components/AddSectionModal';
+import { ChatDrawer } from './components/ChatDrawer';
+import { CitationPanel } from './components/CitationPanel';
 
 type SectionStatus = 'pending' | 'ready' | 'accepted' | 'rejected';
 type EditableSectionType = 'heading' | 'paragraph';
@@ -44,6 +51,8 @@ interface SectionRecord {
   change_summary: string | null;
   ai_score: number | null;
   humanized_text: string | null;
+  reformatted_text: string | null;
+  reformat_type: string | null;
   status: SectionStatus;
   created_at: string;
   updated_at: string;
@@ -274,6 +283,8 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   const [instructionError, setInstructionError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [isExportingTracked, setIsExportingTracked] = useState(false);
+  const [exportTrackedError, setExportTrackedError] = useState<string | null>(null);
   const [isMatchingReferences, setIsMatchingReferences] = useState(false);
   const [matchReferencesError, setMatchReferencesError] = useState<string | null>(null);
   const [matchReferencesSummary, setMatchReferencesSummary] = useState<ReferenceMatchSummary | null>(null);
@@ -290,8 +301,12 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   const [splitSectionHeadingLevel, setSplitSectionHeadingLevel] = useState(2);
   const [splitSectionText, setSplitSectionText] = useState('');
   const [splitSectionError, setSplitSectionError] = useState<string | null>(null);
+  const [addSectionTitle, setAddSectionTitle] = useState<string | null>(null);
+  const [reformattingById, setReformattingById] = useState<Record<string, boolean>>({});
+  const [reformatErrorById, setReformatErrorById] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const firstSectionSetRef = useRef(false);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -837,6 +852,47 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
     }));
   };
 
+  const handleReformat = async (
+    sectionId: string,
+    format: 'table' | 'bullet_list' | 'questionnaire' | 'summary_box',
+  ): Promise<void> => {
+    if (!supabaseSession) {
+      return;
+    }
+
+    setReformattingById((prev) => ({ ...prev, [sectionId]: true }));
+    setReformatErrorById((prev) => ({ ...prev, [sectionId]: '' }));
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/sections/${encodeURIComponent(sectionId)}/reformat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${supabaseSession.access_token}`,
+          },
+          body: JSON.stringify({ format }),
+        },
+      );
+
+      const json = (await response.json()) as { success: boolean; data?: SectionRecord; error?: string };
+      if (!json.success || !json.data) {
+        throw new Error(json.error ?? 'Reformat failed');
+      }
+
+      const updated = json.data;
+      updateSectionInPayload(updated);
+    } catch (err) {
+      setReformatErrorById((prev) => ({
+        ...prev,
+        [sectionId]: err instanceof Error ? err.message : 'Reformat failed',
+      }));
+    } finally {
+      setReformattingById((prev) => ({ ...prev, [sectionId]: false }));
+    }
+  };
+
   const handleExportPdf = async (): Promise<void> => {
     if (!supabaseSession) {
       setExportError('You are not authenticated.');
@@ -895,6 +951,62 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
       );
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportTrackedChanges = async (): Promise<void> => {
+    if (!supabaseSession) {
+      setExportTrackedError('You are not authenticated.');
+      return;
+    }
+
+    if (!sessionId) {
+      setExportTrackedError('No session ID found in URL.');
+      return;
+    }
+
+    setIsExportingTracked(true);
+    setExportTrackedError(null);
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/sessions/${encodeURIComponent(sessionId)}/export/docx-tracked`,
+        {
+          headers: { Authorization: `Bearer ${supabaseSession.access_token}` },
+        },
+      );
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to export tracked changes document.';
+        const contentType = response.headers.get('content-type') ?? '';
+        if (contentType.includes('application/json')) {
+          const body = (await response.json()) as ExportErrorResponse;
+          if (typeof body.error === 'string' && body.error.length > 0) {
+            errorMessage = body.error;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      const safeFilename =
+        payload?.session.filename.replace(/\.[^.]+$/, '') + '-tracked.docx';
+      anchor.href = url;
+      anchor.download = safeFilename ?? `tracked-${sessionId}.docx`;
+      document.body.append(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (exportErr) {
+      setExportTrackedError(
+        exportErr instanceof Error
+          ? exportErr.message
+          : 'Failed to export tracked changes. Please try again.',
+      );
+    } finally {
+      setIsExportingTracked(false);
     }
   };
 
@@ -1098,6 +1210,31 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
           </button>
           <button
             type="button"
+            className="export-tracked-btn"
+            disabled={!canExportPdf || isExportingTracked}
+            onClick={() => {
+              void handleExportTrackedChanges();
+            }}
+          >
+            {isExportingTracked ? (
+              <>
+                <span className="button-spinner" aria-hidden="true" />
+                Exporting...
+              </>
+            ) : (
+              'Export with Track Changes'
+            )}
+          </button>
+          <button
+            type="button"
+            className={`chat-toggle-btn${chatOpen ? ' chat-toggle-btn--active' : ''}`}
+            onClick={() => setChatOpen((o) => !o)}
+            aria-pressed={chatOpen}
+          >
+            {chatOpen ? 'Close Chat' : 'Ask AI'}
+          </button>
+          <button
+            type="button"
             className="secondary-button"
             onClick={() => window.location.assign('/')}
           >
@@ -1111,6 +1248,11 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
           {exportError}
         </p>
       ) : null}
+      {exportTrackedError ? (
+        <p className="review-export-error" role="alert">
+          {exportTrackedError}
+        </p>
+      ) : null}
       {matchReferencesSummary ? (
         <p className="review-export-error review-match-success" role="status">
           {matchReferencesSummary.noCitationsDetected
@@ -1122,6 +1264,43 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
         <p className="review-export-error" role="alert">
           {matchReferencesError}
         </p>
+      ) : null}
+
+      {supabaseSession && sessionId ? (
+        <AIReviewPanel
+          sessionId={sessionId}
+          authToken={supabaseSession.access_token}
+          apiBaseUrl={apiBaseUrl}
+        />
+      ) : null}
+
+      {supabaseSession && sessionId ? (
+        <TonePanel
+          sessionId={sessionId}
+          authToken={supabaseSession.access_token}
+        />
+      ) : null}
+
+      {supabaseSession && sessionId ? (
+        <CompletenessPanel
+          sessionId={sessionId}
+          authToken={supabaseSession.access_token}
+          onAddSection={(title) => {
+            setAddSectionTitle(title);
+          }}
+        />
+      ) : null}
+
+      {supabaseSession && sessionId ? (
+        <CitationPanel
+          sessionId={sessionId}
+          authToken={supabaseSession.access_token}
+          apiBaseUrl={apiBaseUrl}
+          onScrollToSection={(sectionId) => {
+            const el = document.getElementById(`section-${sectionId}`);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }}
+        />
       ) : null}
 
       <div className="review-progress" aria-label="Review progress">
@@ -1191,8 +1370,10 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
           </div>
 
           {activeSection !== null ? (
+            <div id={`section-${activeSection.id}`}>
             <SectionCard
               section={activeSection}
+              fkGradeLevel={computeFKGradeLevel(activeSection.corrected_text ?? activeSection.original_text)}
               editedText={getEditedText(activeSection)}
               isSaving={savingSectionId === activeSection.id}
               actionError={actionError}
@@ -1255,7 +1436,13 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
               onSplitSectionHeadingLevelChange={setSplitSectionHeadingLevel}
               onSplitSection={handleSplitSection}
               onUseHumanizedVersion={(text) => handleUseHumanizedVersion(activeSection.id, text)}
+              reformattedText={activeSection.reformatted_text ?? null}
+              reformatType={activeSection.reformat_type ?? null}
+              isReformatting={reformattingById[activeSection.id] ?? false}
+              reformatError={reformatErrorById[activeSection.id] ?? null}
+              onReformat={(format) => { void handleReformat(activeSection.id, format); }}
             />
+            </div>
           ) : (
             <div className="section-empty">
               <span className="section-empty-icon" aria-hidden="true">
@@ -1270,6 +1457,51 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
           )}
         </main>
       </div>
+
+      {supabaseSession && sessionId ? (
+        <ChatDrawer
+          sessionId={sessionId}
+          authToken={supabaseSession.access_token}
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
+      ) : null}
+
+      {addSectionTitle !== null && supabaseSession !== null && sessionId !== null ? (
+        <AddSectionModal
+          sessionId={sessionId}
+          authToken={supabaseSession.access_token}
+          initialTitle={addSectionTitle}
+          totalSections={payload.sections.length}
+          onConfirm={async (title, position, content) => {
+            const res = await fetch(
+              `${apiBaseUrl}/api/sessions/${encodeURIComponent(sessionId)}/sections/insert`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${supabaseSession.access_token}`,
+                },
+                body: JSON.stringify({ title, position, content }),
+              },
+            );
+            const json = (await res.json()) as {
+              success: boolean;
+              data?: { session_id: string; sections: SectionRecord[] };
+              error?: string;
+            };
+            if (!json.success || !json.data) {
+              throw new Error(json.error ?? 'Insert failed');
+            }
+            setPayload((current) => {
+              if (!current) return current;
+              return { ...current, sections: json.data!.sections };
+            });
+            setAddSectionTitle(null);
+          }}
+          onClose={() => setAddSectionTitle(null)}
+        />
+      ) : null}
     </div>
   );
 }
