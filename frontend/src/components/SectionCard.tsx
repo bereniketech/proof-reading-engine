@@ -205,6 +205,7 @@ export function SectionCard({
   onSplitSectionHeadingLevelChange,
   onSplitSection,
 }: SectionCardProps) {
+  const [activeTab, setActiveTab] = useState<'corrected' | 'diff' | 'summary'>('corrected');
   const textareaId = `corrected-text-${section.id}`;
   const instructionId = `instruction-${section.id}`;
   const addSectionTextareaId = `add-section-${section.id}`;
@@ -245,50 +246,77 @@ export function SectionCard({
       </div>
 
       <div className="section-block">
-        <label className="section-block-label" htmlFor={textareaId}>
-          Corrected text
-        </label>
-        <textarea
-          id={textareaId}
-          className="section-editor"
-          value={editedText}
-          onChange={(event) => onEditedTextChange(event.target.value)}
-          placeholder={isPending ? 'Proofreading in progress…' : 'Edit the corrected text before accepting'}
-          disabled={isPending || isSaving}
-          rows={10}
-        />
-      </div>
+        <div className="section-tabs" role="tablist" aria-label="Section views">
+          <button
+            role="tab"
+            type="button"
+            aria-selected={activeTab === 'corrected'}
+            className={`section-tab${activeTab === 'corrected' ? ' section-tab--active' : ''}`}
+            onClick={() => setActiveTab('corrected')}
+          >
+            Corrected text
+          </button>
+          <button
+            role="tab"
+            type="button"
+            aria-selected={activeTab === 'diff'}
+            className={`section-tab${activeTab === 'diff' ? ' section-tab--active' : ''}`}
+            onClick={() => setActiveTab('diff')}
+          >
+            Inline diff
+          </button>
+          {hasSummary ? (
+            <button
+              role="tab"
+              type="button"
+              aria-selected={activeTab === 'summary'}
+              className={`section-tab${activeTab === 'summary' ? ' section-tab--active' : ''}`}
+              onClick={() => setActiveTab('summary')}
+            >
+              Summary
+            </button>
+          ) : null}
+        </div>
 
-      <div className="section-block section-diff">
-        <h2 className="section-block-label">Inline diff</h2>
-        {diffChunks.length > 0 ? (
-          <p className="section-block-content section-diff-content" aria-live="polite">
-            {diffChunks.map((chunk, index) => (
-              <span
-                key={`${chunk.type}-${index}`}
-                className={
-                  chunk.type === 'added'
-                    ? 'diff-token diff-token--added'
-                    : chunk.type === 'removed'
-                      ? 'diff-token diff-token--removed'
-                      : 'diff-token'
-                }
-              >
-                {chunk.value}
-              </span>
-            ))}
-          </p>
+        {activeTab === 'corrected' ? (
+          <textarea
+            id={textareaId}
+            className="section-editor"
+            value={editedText}
+            onChange={(event) => onEditedTextChange(event.target.value)}
+            placeholder={isPending ? 'Proofreading in progress…' : 'Edit the corrected text before accepting'}
+            disabled={isPending || isSaving}
+            rows={10}
+          />
+        ) : activeTab === 'diff' ? (
+          <div className="section-diff" role="tabpanel">
+            {diffChunks.length > 0 ? (
+              <p className="section-block-content section-diff-content" aria-live="polite">
+                {diffChunks.map((chunk, index) => (
+                  <span
+                    key={`${chunk.type}-${index}`}
+                    className={
+                      chunk.type === 'added'
+                        ? 'diff-token diff-token--added'
+                        : chunk.type === 'removed'
+                          ? 'diff-token diff-token--removed'
+                          : 'diff-token'
+                    }
+                  >
+                    {chunk.value}
+                  </span>
+                ))}
+              </p>
+            ) : (
+              <p className="section-block-content section-block-content--summary">No text changes yet.</p>
+            )}
+          </div>
         ) : (
-          <p className="section-block-content section-block-content--summary">No text changes yet.</p>
+          <div role="tabpanel">
+            <p className="section-block-content section-block-content--summary">{section.change_summary}</p>
+          </div>
         )}
       </div>
-
-      {hasSummary ? (
-        <div className="section-block">
-          <h2 className="section-block-label">Summary of changes</h2>
-          <p className="section-block-content section-block-content--summary">{section.change_summary}</p>
-        </div>
-      ) : null}
 
       <div className="section-block">
         <label className="section-block-label" htmlFor={instructionId}>

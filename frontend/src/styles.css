@@ -1011,6 +1011,37 @@ p {
   gap: 0.5rem;
 }
 
+.section-tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1.5px solid var(--color-border-soft);
+  margin: -0.875rem -1rem 0.75rem;
+  padding: 0 1rem;
+}
+
+.section-tab {
+  background: none;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -1.5px;
+  padding: 0.5rem 0.75rem;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.section-tab:hover {
+  color: var(--color-foreground);
+}
+
+.section-tab--active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
 .section-block-label {
   margin: 0;
   font-size: var(--font-size-xs);
@@ -1467,39 +1498,6 @@ p {
   }
 }
 
-/* Editor page responsive */
-.suggestion-panel-wrapper {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  /* Always show on desktop */
-  .suggestion-panel-wrapper {
-    display: flex;
-  }
-  /* On tablet (768–1279px) respect the hidden state from the toggle */
-}
-
-@media (min-width: 768px) and (max-width: 1279px) {
-  .suggestion-panel-wrapper.hidden {
-    display: none;
-  }
-}
-
-.suggestion-panel-wrapper.show {
-  display: flex;
-}
-
-/* Tablet toggle button: hidden by default, visible only on 768–1279px */
-.suggestion-panel-toggle {
-  display: none;
-}
-
-@media (min-width: 768px) and (max-width: 1279px) {
-  .suggestion-panel-toggle {
-    display: flex;
-  }
-}
 
 .mobile-only {
   display: flex;

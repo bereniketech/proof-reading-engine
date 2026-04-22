@@ -257,10 +257,9 @@ function StatusBadge({ status }: { readonly status: SectionStatus }) {
 
 interface ReviewPageProps {
   sessionId?: string;
-  onActiveSectionChange?: (sectionId: string | null) => void;
 }
 
-export default function ReviewPage({ sessionId: propSessionId, onActiveSectionChange }: ReviewPageProps = {}) {
+export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps = {}) {
   const [supabaseSession, setSupabaseSession] = useState<SupabaseSession | null>(null);
   const [payload, setPayload] = useState<SessionPayload | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
@@ -297,10 +296,6 @@ export default function ReviewPage({ sessionId: propSessionId, onActiveSectionCh
   const cancelledRef = useRef(false);
 
   const sessionId = propSessionId ?? getSessionIdFromUrl();
-
-  useEffect(() => {
-    onActiveSectionChange?.(activeSectionId);
-  }, [activeSectionId, onActiveSectionChange]);
 
   // Initialize Supabase auth
   useEffect(() => {
@@ -520,6 +515,15 @@ export default function ReviewPage({ sessionId: propSessionId, onActiveSectionCh
         final_text: editedText,
       });
       updateSectionInPayload(updated);
+
+      // Advance to the next section that hasn't been reviewed yet
+      const currentIndex = payload.sections.findIndex((s) => s.id === activeSection.id);
+      const nextSection = payload.sections
+        .slice(currentIndex + 1)
+        .find((s) => s.status !== 'accepted' && s.status !== 'rejected');
+      if (nextSection) {
+        setActiveSectionId(nextSection.id);
+      }
     } catch (patchError) {
       updateSectionInPayload(previousSection);
       setActionError(
