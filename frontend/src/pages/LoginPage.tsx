@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { supabase } from '../lib/supabase';
 
-type AuthMode = 'login' | 'signup';
+type AuthMode = 'login' | 'signup' | 'forgot';
 
 export function LoginPage(){
   const { session } = useAuth();
@@ -27,6 +27,19 @@ export function LoginPage(){
     setIsSubmitting(true);
     setErrorMessage(null);
     setInfoMessage(null);
+
+    if (mode === 'forgot') {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        setErrorMessage(error.message);
+      } else {
+        setInfoMessage('Password reset email sent. Check your inbox.');
+      }
+      setIsSubmitting(false);
+      return;
+    }
 
     if (mode === 'login') {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -141,11 +154,11 @@ export function LoginPage(){
               textAlign: 'center',
             }}
           >
-            {mode === 'login' ? 'Sign in to your workspace' : 'Create your workspace'}
+            {mode === 'login' ? 'Sign in to your workspace' : mode === 'signup' ? 'Create your workspace' : 'Reset your password'}
           </p>
         </div>
 
-        <button
+        {mode !== 'forgot' && <button
           type="button"
           onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/dashboard` } })}
           style={{
@@ -184,13 +197,13 @@ export function LoginPage(){
             />
           </svg>
           Continue with Google
-        </button>
+        </button>}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+        {mode !== 'forgot' && <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
           <div style={{ flex: 1, height: '1px', background: 'var(--color-outline-variant)' }} />
           <span style={{ fontSize: '0.75rem', color: 'var(--color-on-surface-variant)' }}>or continue with email</span>
           <div style={{ flex: 1, height: '1px', background: 'var(--color-outline-variant)' }} />
-        </div>
+        </div>}
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <label className="field" style={{ gap: '0.25rem' }}>
@@ -206,12 +219,14 @@ export function LoginPage(){
             />
           </label>
 
+          {mode !== 'forgot' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.375rem' }}>
               <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-on-surface)' }}>Password</span>
               {mode === 'login' && (
                 <button
                   type="button"
+                  onClick={() => { setMode('forgot'); setErrorMessage(null); setInfoMessage(null); }}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -235,7 +250,7 @@ export function LoginPage(){
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-          </div>
+          </div>)}
 
           <button
             type="submit"
@@ -257,7 +272,7 @@ export function LoginPage(){
               gap: '0.5rem',
             }}
           >
-            {isSubmitting ? 'Please wait...' : mode === 'login' ? 'Sign In to Workspace' : 'Create Workspace ->'}
+            {isSubmitting ? 'Please wait...' : mode === 'login' ? 'Sign In to Workspace' : mode === 'signup' ? 'Create Workspace ->' : 'Send Reset Email'}
           </button>
         </form>
 
@@ -269,11 +284,11 @@ export function LoginPage(){
             color: 'var(--color-on-surface-variant)',
           }}
         >
-          {mode === 'login' ? "Don't have an account? " : 'Already have one? '}
+          {mode === 'forgot' ? 'Remembered it? ' : mode === 'login' ? "Don't have an account? " : 'Already have one? '}
           <button
             type="button"
             onClick={() => {
-              setMode(mode === 'login' ? 'signup' : 'login');
+              setMode(mode === 'forgot' ? 'login' : mode === 'login' ? 'signup' : 'login');
               setErrorMessage(null);
               setInfoMessage(null);
             }}
@@ -287,7 +302,7 @@ export function LoginPage(){
               fontSize: '0.85rem',
             }}
           >
-            {mode === 'login' ? 'Create one' : 'Sign in'}
+            {mode === 'forgot' ? 'Back to sign in' : mode === 'login' ? 'Create one' : 'Sign in'}
           </button>
         </p>
 
@@ -297,7 +312,7 @@ export function LoginPage(){
           </p>
         )}
         {infoMessage && (
-          <p className="feedback info" style={{ marginTop: '1rem' }}>
+          <p className="feedback info" role="status" style={{ marginTop: '1rem' }}>
             {infoMessage}
           </p>
         )}

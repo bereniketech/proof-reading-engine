@@ -31,7 +31,7 @@ function isLikelyHeading(text: string): boolean {
   }
 
   // Match known academic section headings (possibly with a subtitle after a colon/dash/paren)
-  const normalized = (text.split(/[:(–\-]/)[0] ?? '').trim().toLowerCase();
+  const normalized = (text.split(/[:(–-]/)[0] ?? '').trim().toLowerCase();
   return KNOWN_SECTION_HEADINGS.has(normalized);
 }
 

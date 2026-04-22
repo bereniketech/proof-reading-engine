@@ -66,11 +66,11 @@ export function AppShell() {
       <div className={`main-content${sidebarCollapsed ? ' sidebar-collapsed' : ''}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: 0 }}>
         <TopNav onMenuToggle={() => setSidebarOpen((current) => !current)} />
         <main
+          className="app-main"
           style={{
             flex: 1,
             overflowY: 'auto',
             padding: '1.5rem',
-            paddingBottom: '6rem',
           }}
         >
           <Outlet />

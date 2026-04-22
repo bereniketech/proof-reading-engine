@@ -16,6 +16,11 @@ function getInitials(name: string, email: string): string {
   return email.charAt(0).toUpperCase();
 }
 
+interface SessionListItem {
+  id: string;
+  status: string;
+}
+
 export function ProfilePage(){
   const { session } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -24,6 +29,7 @@ export function ProfilePage(){
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [precisionScore, setPrecisionScore] = useState<number | null>(null);
 
   const fetchProfile = useCallback(async (): Promise<void> => {
     if (!session) return;
@@ -37,7 +43,41 @@ export function ProfilePage(){
     finally { setLoading(false); }
   }, [session]);
 
-  useEffect(() => { void fetchProfile(); }, [fetchProfile]);
+  useEffect(() => {
+    void fetchProfile();
+  }, [fetchProfile]);
+
+  useEffect(() => {
+    if (!session) return;
+    const controller = new AbortController();
+    const { signal } = controller;
+
+    const run = async (): Promise<void> => {
+      try {
+        const sessRes = await fetch(`${apiBaseUrl}/api/sessions`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          signal,
+        });
+        const sessJson = await sessRes.json() as { success: boolean; data?: SessionListItem[] };
+        if (!sessJson.success || !sessJson.data) return;
+        const latestComplete = sessJson.data.find((s) => s.status === 'complete');
+        if (!latestComplete) return;
+        const insRes = await fetch(`${apiBaseUrl}/api/insights/${latestComplete.id}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          signal,
+        });
+        const insJson = await insRes.json() as { success: boolean; data?: { quality_score: number } };
+        if (insJson.success && insJson.data) {
+          setPrecisionScore(Math.round(insJson.data.quality_score));
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+      }
+    };
+
+    void run();
+    return () => controller.abort();
+  }, [session]);
 
   const handleSave = async (): Promise<void> => {
     if (!session || !profile) return;
@@ -65,11 +105,38 @@ export function ProfilePage(){
     finally { setSaving(false); }
   };
 
-  if (loading) return <div style={{ padding: '2rem', color: 'var(--color-on-surface-variant)' }}>Loading profile…</div>;
+  if (loading) return (
+    <div style={{ maxWidth: '72rem', margin: '0 auto', padding: '0.5rem 0' }} aria-busy="true" aria-label="Loading profile">
+      {/* Avatar row skeleton */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div className="skeleton" style={{ width: '6rem', height: '6rem', borderRadius: 'var(--radius-xl)', flexShrink: 0 }} />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <div className="skeleton" style={{ width: '14rem', height: '2rem', borderRadius: 'var(--radius-lg)' }} />
+          <div className="skeleton" style={{ width: '8rem', height: '1rem', borderRadius: 'var(--radius-lg)' }} />
+        </div>
+        <div className="skeleton" style={{ width: '7rem', height: '2.25rem', borderRadius: 'var(--radius-lg)' }} />
+      </div>
+      {/* Card skeletons */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.25rem' }}>
+        <div style={{ gridColumn: 'span 6' }} className="profile-col-6">
+          <div className="skeleton" style={{ borderRadius: 'var(--radius-xl)', height: '12rem' }} />
+        </div>
+        <div style={{ gridColumn: 'span 6' }} className="profile-col-6">
+          <div className="skeleton" style={{ borderRadius: 'var(--radius-xl)', height: '12rem' }} />
+        </div>
+        <div style={{ gridColumn: 'span 4' }} className="profile-col-4">
+          <div className="skeleton" style={{ borderRadius: 'var(--radius-xl)', height: '10rem' }} />
+        </div>
+        <div style={{ gridColumn: 'span 8' }} className="profile-col-8">
+          <div className="skeleton" style={{ borderRadius: 'var(--radius-xl)', height: '10rem' }} />
+        </div>
+      </div>
+    </div>
+  );
   if (!profile) return <div style={{ padding: '2rem', color: 'var(--color-on-surface-variant)' }}>Could not load profile.</div>;
 
   const initials = getInitials(profile.name, profile.email);
-  const qualityScore = 87; // Placeholder — could fetch from latest session insights
+  const qualityScore = precisionScore ?? null;
 
   return (
     <div style={{ maxWidth: '72rem', margin: '0 auto' }}>
@@ -140,8 +207,20 @@ export function ProfilePage(){
                 </li>
               ))}
             </ul>
-            <button style={{ border: '1px solid var(--color-outline-variant)', background: 'transparent', borderRadius: 'var(--radius-lg)', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.82rem', marginRight: '0.5rem' }}>Manage Billing</button>
-            <button style={{ border: '1px solid var(--color-outline-variant)', background: 'transparent', borderRadius: 'var(--radius-lg)', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.82rem' }}>Change Plan</button>
+            <button
+              disabled
+              title="Coming soon"
+              style={{ border: '1px solid var(--color-outline-variant)', background: 'transparent', borderRadius: 'var(--radius-lg)', padding: '0.5rem 1rem', cursor: 'not-allowed', fontSize: '0.82rem', marginRight: '0.5rem', opacity: 0.55 }}
+            >
+              Manage Billing <span style={{ fontSize: '0.7rem' }}>(Coming soon)</span>
+            </button>
+            <button
+              disabled
+              title="Coming soon"
+              style={{ border: '1px solid var(--color-outline-variant)', background: 'transparent', borderRadius: 'var(--radius-lg)', padding: '0.5rem 1rem', cursor: 'not-allowed', fontSize: '0.82rem', opacity: 0.55 }}
+            >
+              Change Plan <span style={{ fontSize: '0.7rem' }}>(Coming soon)</span>
+            </button>
           </div>
         </div>
 
@@ -149,8 +228,22 @@ export function ProfilePage(){
         <div style={{ gridColumn: 'span 4' }} className="profile-col-4">
           <div style={{ background: 'var(--color-surface-container-highest)', borderRadius: 'var(--radius-xl)', padding: '1.5rem', borderBottom: '4px solid var(--color-tertiary-fixed)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
             <h3 className="font-display" style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>Precision Score</h3>
-            <CircularProgress value={qualityScore} size={96} />
-            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-on-surface-variant)' }}>Based on last analysis</p>
+            {qualityScore !== null ? (
+              <CircularProgress value={qualityScore} size={96} />
+            ) : (
+              <div style={{
+                width: 96, height: 96, borderRadius: '50%',
+                background: 'var(--color-surface-container-high)',
+                display: 'grid', placeItems: 'center',
+                fontSize: '0.75rem', color: 'var(--color-on-surface-variant)',
+                textAlign: 'center', padding: '0.5rem',
+              }}>
+                —
+              </div>
+            )}
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-on-surface-variant)' }}>
+              {qualityScore === null ? 'No completed sessions yet' : 'Based on last analysis'}
+            </p>
           </div>
         </div>
 
@@ -205,8 +298,20 @@ export function ProfilePage(){
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--color-on-surface-variant)' }}>24/7 editorial concierge — we're here to help.</p>
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button style={{ border: '1px solid var(--color-outline-variant)', background: 'transparent', borderRadius: 'var(--radius-lg)', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem' }}>Open Ticket</button>
-              <button style={{ border: '1px solid var(--color-outline-variant)', background: 'transparent', borderRadius: 'var(--radius-lg)', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.85rem' }}>Documentation</button>
+              <button
+                disabled
+                title="Coming soon"
+                style={{ border: '1px solid var(--color-outline-variant)', background: 'transparent', borderRadius: 'var(--radius-lg)', padding: '0.5rem 1rem', cursor: 'not-allowed', fontSize: '0.85rem', opacity: 0.55 }}
+              >
+                Open Ticket <span style={{ fontSize: '0.7rem' }}>(Coming soon)</span>
+              </button>
+              <button
+                disabled
+                title="Coming soon"
+                style={{ border: '1px solid var(--color-outline-variant)', background: 'transparent', borderRadius: 'var(--radius-lg)', padding: '0.5rem 1rem', cursor: 'not-allowed', fontSize: '0.85rem', opacity: 0.55 }}
+              >
+                Documentation <span style={{ fontSize: '0.7rem' }}>(Coming soon)</span>
+              </button>
             </div>
           </div>
         </div>

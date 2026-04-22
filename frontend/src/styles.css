@@ -1471,13 +1471,32 @@ p {
 }
 
 @media (min-width: 768px) {
+  /* Always show on desktop */
   .suggestion-panel-wrapper {
     display: flex;
+  }
+  /* On tablet (768–1279px) respect the hidden state from the toggle */
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .suggestion-panel-wrapper.hidden {
+    display: none;
   }
 }
 
 .suggestion-panel-wrapper.show {
   display: flex;
+}
+
+/* Tablet toggle button: hidden by default, visible only on 768–1279px */
+.suggestion-panel-toggle {
+  display: none;
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  .suggestion-panel-toggle {
+    display: flex;
+  }
 }
 
 .mobile-only {
@@ -1488,6 +1507,32 @@ p {
   .mobile-only {
     display: none !important;
   }
+}
+
+/* AppShell main content — bottom padding for mobile bottom nav */
+@media (max-width: 767px) {
+  .app-main {
+    padding-bottom: 6rem;
+  }
+}
+
+/* Document card — delete button always visible on touch */
+@media (hover: none) {
+  .document-card .delete-btn {
+    opacity: 1 !important;
+  }
+}
+
+/* Skeleton loader */
+@keyframes skeleton-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--color-surface-container-high) 25%, var(--color-surface-container-highest) 50%, var(--color-surface-container-high) 75%);
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

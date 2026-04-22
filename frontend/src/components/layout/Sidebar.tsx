@@ -99,7 +99,7 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
         {!collapsed && (
           <div style={{ overflow: 'hidden' }}>
             <div className="font-display" style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>
-              AI Curator
+              Editorial Intelligence
             </div>
             <div style={{ fontSize: '0.7rem', color: 'var(--color-on-surface-variant)', letterSpacing: '0.05rem' }}>v2.4</div>
           </div>

@@ -87,7 +87,7 @@ export function BottomNav() {
               cursor: 'pointer',
               background: isActive ? 'var(--color-surface-container-highest)' : 'transparent',
               color: isActive ? 'var(--color-primary)' : 'var(--color-on-surface-variant)',
-              fontSize: '0.65rem',
+              fontSize: '0.75rem',
               fontWeight: isActive ? 600 : 500,
             }}
             aria-current={isActive ? 'page' : undefined}
