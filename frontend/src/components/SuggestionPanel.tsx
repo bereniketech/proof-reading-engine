@@ -42,9 +42,6 @@ interface SuggestionPanelProps {
   activeSectionId?: string | null;
 }
 
-function truncate(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max - 1) + '…' : text;
-}
 
 export function SuggestionPanel({ sections, accessToken, onSectionAccepted, activeSectionId }: SuggestionPanelProps){
   const [accepting, setAccepting] = useState<Set<string>>(new Set());
@@ -148,16 +145,23 @@ export function SuggestionPanel({ sections, accessToken, onSectionAccepted, acti
                   {style.label}
                 </div>
 
+                {/* Reason */}
+                {suggestion.summary && (
+                  <p style={{ margin: '0 0 0.625rem', fontSize: '0.78rem', color: 'var(--color-on-surface-variant)', lineHeight: 1.5 }}>
+                    {suggestion.summary}
+                  </p>
+                )}
+
                 {/* Original excerpt */}
                 <p style={{ margin: '0 0 0.25rem', fontSize: '0.8rem', color: 'var(--color-on-surface-variant)', fontStyle: 'italic' }}>
-                  "{truncate(suggestion.original, 80)}"
+                  "{suggestion.original}"
                 </p>
 
                 {/* Arrow + suggestion */}
                 <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'flex-start', margin: '0.5rem 0 0.875rem' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '1rem', color: 'var(--color-tertiary-fixed-dim)', flexShrink: 0, marginTop: '0.1rem' }}>arrow_downward</span>
                   <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-on-surface)' }}>
-                    {truncate(suggestion.corrected, 120)}
+                    {suggestion.corrected}
                   </p>
                 </div>
 
