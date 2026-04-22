@@ -4,7 +4,7 @@ import { useAuth } from '../context/useAuth';
 import { DocumentCard, type SessionListItem } from '../components/DocumentCard';
 import { DOCUMENT_TYPES, apiBaseUrl, validateUploadFile, formatBytes, isUploadSuccessResponse } from '../lib/constants';
 
-export function DashboardPage(): JSX.Element {
+export function DashboardPage(){
   const { session } = useAuth();
   const navigate = useNavigate();
 

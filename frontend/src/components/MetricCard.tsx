@@ -8,7 +8,7 @@ interface MetricCardProps {
   glass?: boolean;
 }
 
-export function MetricCard({ icon, title, children, style, glass }: MetricCardProps): JSX.Element {
+export function MetricCard({ icon, title, children, style, glass }: MetricCardProps){
   return (
     <div
       className={glass ? 'glass' : undefined}

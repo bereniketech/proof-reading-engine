@@ -30,7 +30,7 @@ const REFERENCE_STYLES = [
   { value: 'vancouver', label: 'Vancouver' },
 ];
 
-export function EditorPage(): JSX.Element {
+export function EditorPage(){
   const { sessionId } = useParams<{ sessionId: string }>();
   const { session } = useAuth();
   const navigate = useNavigate();

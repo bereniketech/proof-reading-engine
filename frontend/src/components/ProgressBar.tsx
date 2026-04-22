@@ -5,7 +5,7 @@ interface ProgressBarProps {
   showValue?: boolean;
 }
 
-export function ProgressBar({ label, value, color, showValue = true }: ProgressBarProps): JSX.Element {
+export function ProgressBar({ label, value, color, showValue = true }: ProgressBarProps){
   const trackColor = color ?? 'var(--color-primary)';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>

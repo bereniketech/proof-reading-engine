@@ -5,7 +5,7 @@ interface CircularProgressProps {
   color?: string;     // default tertiary-fixed
 }
 
-export function CircularProgress({ value, size = 96, strokeWidth = 8, color }: CircularProgressProps): JSX.Element {
+export function CircularProgress({ value, size = 96, strokeWidth = 8, color }: CircularProgressProps){
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (Math.max(0, Math.min(100, value)) / 100) * circumference;

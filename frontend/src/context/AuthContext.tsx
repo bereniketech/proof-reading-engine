@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { AuthContext } from './AuthContextProvider';
 
-export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
+export function AuthProvider({ children }: { children: ReactNode }){
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 

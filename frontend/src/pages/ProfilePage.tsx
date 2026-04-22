@@ -16,7 +16,7 @@ function getInitials(name: string, email: string): string {
   return email.charAt(0).toUpperCase();
 }
 
-export function ProfilePage(): JSX.Element {
+export function ProfilePage(){
   const { session } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [draft, setDraft] = useState<Partial<UserProfile>>({});

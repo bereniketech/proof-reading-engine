@@ -45,7 +45,7 @@ function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max - 1) + '…' : text;
 }
 
-export function SuggestionPanel({ sections, accessToken, onSectionAccepted }: SuggestionPanelProps): JSX.Element {
+export function SuggestionPanel({ sections, accessToken, onSectionAccepted }: SuggestionPanelProps){
   const [accepting, setAccepting] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
 

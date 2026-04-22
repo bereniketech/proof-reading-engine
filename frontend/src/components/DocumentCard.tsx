@@ -36,7 +36,7 @@ function getStatusStyle(status: string): { bg: string; fg: string; label: string
   }
 }
 
-export function DocumentCard({ session, onClick }: DocumentCardProps): JSX.Element {
+export function DocumentCard({ session, onClick }: DocumentCardProps){
   const statusStyle = getStatusStyle(session.status);
   const truncatedName = session.filename.length > 40 ? session.filename.slice(0, 37) + '...' : session.filename;
 

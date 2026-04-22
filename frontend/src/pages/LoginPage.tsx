@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 
 type AuthMode = 'login' | 'signup';
 
-export function LoginPage(): JSX.Element {
+export function LoginPage(){
   const { session } = useAuth();
   const navigate = useNavigate();
 

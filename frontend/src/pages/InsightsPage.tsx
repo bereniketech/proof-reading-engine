@@ -13,7 +13,7 @@ interface InsightsData {
   word_count: number; readability_score: number;
 }
 
-export function InsightsPage(): JSX.Element {
+export function InsightsPage(){
   const { sessionId } = useParams<{ sessionId: string }>();
   const { session } = useAuth();
   const navigate = useNavigate();
