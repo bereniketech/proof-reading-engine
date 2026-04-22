@@ -24,14 +24,29 @@ Rules:
    [{"section_type":"heading"|"paragraph","text":"..."},...]`;
 
 /**
- * Insert a blank line before any line that is a known section label so the
- * LLM always sees a structural boundary, even when the PDF has no blank line
- * between the document title and "Abstract".
+ * Ensure every known section label is on its own line with a blank line before
+ * it, so the LLM always sees a clear structural boundary.
+ *
+ * Handles two cases:
+ *  1. Label is already its own line — just insert blank line before it.
+ *  2. Label is glued at the END of a preceding line with no newline
+ *     (e.g. pdf-parse gives "...Questionnaire Study Abstract") — split there.
+ *     We only do this for single-word labels to avoid false positives inside
+ *     body sentences.
  */
 function preProcessText(text: string): string {
-  const lines = text.split('\n');
-  const out: string[] = [];
+  // Sort longest-first so multi-word labels match before their sub-words.
+  const sortedLabels = [...KNOWN_SECTION_LABELS].sort((a, b) => b.length - a.length);
+  const escaped = sortedLabels.map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 
+  // Split any label that is glued at the end of a preceding line with no newline
+  // (e.g. "...Questionnaire Study Abstract" → "...Questionnaire Study\nAbstract").
+  const endGlueRe = new RegExp(`(\\S)\\s+(${escaped.join('|')})$`, 'gim');
+  const split = text.replace(endGlueRe, '$1\n$2');
+
+  // Ensure a blank line precedes every line that is exactly a known label.
+  const lines = split.split('\n');
+  const out: string[] = [];
   for (const line of lines) {
     const trimmed = line.trim().toLowerCase();
     if (KNOWN_SECTION_LABELS.has(trimmed) && out.length > 0 && out.at(-1) !== '') {
