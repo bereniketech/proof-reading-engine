@@ -8,38 +8,35 @@ interface TopNavProps {
 }
 
 function getDefaultTitle(pathname: string): string {
-  if (pathname.startsWith('/editor/')) {
-    return 'Editor';
-  }
-
-  if (pathname.startsWith('/insights/')) {
-    return 'Insights';
-  }
-
-  if (pathname.startsWith('/profile')) {
-    return 'Profile';
-  }
-
+  if (pathname.startsWith('/editor/')) return 'Editor';
+  if (pathname.startsWith('/insights/')) return 'Insights';
+  if (pathname.startsWith('/profile')) return 'Profile';
   return 'Documents';
+}
+
+function getInitial(email: string): string {
+  return email.charAt(0).toUpperCase();
 }
 
 export function TopNav({ onMenuToggle, title }: TopNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
-  const [notifOpen, setNotifOpen] = useState(false);
-  const notifRef = useRef<HTMLDivElement>(null);
+  const { signOut, session } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!notifOpen) return;
-    const handleOutsideClick = (event: MouseEvent): void => {
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-        setNotifOpen(false);
+    if (!menuOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [notifOpen]);
+  }, [menuOpen]);
+
+  const initial = session?.user?.email ? getInitial(session.user.email) : '?';
 
   return (
     <header
@@ -81,96 +78,95 @@ export function TopNav({ onMenuToggle, title }: TopNavProps) {
         {title ?? getDefaultTitle(location.pathname)}
       </span>
 
-      <div ref={notifRef} style={{ position: 'relative' }}>
+
+      <div ref={menuRef} style={{ position: 'relative' }}>
         <button
-          aria-label="Notifications"
-          aria-haspopup="true"
-          aria-expanded={notifOpen}
           type="button"
-          onClick={() => setNotifOpen((v) => !v)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-on-surface-variant)', padding: 0 }}
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label="Account menu"
+          aria-expanded={menuOpen}
+          style={{
+            width: '2.25rem',
+            height: '2.25rem',
+            borderRadius: '50%',
+            border: '2px solid var(--color-outline-variant)',
+            background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-container))',
+            color: '#fff',
+            fontWeight: 800,
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            fontFamily: 'Manrope, sans-serif',
+          }}
         >
-          <span className="material-symbols-outlined">notifications</span>
+          {initial}
         </button>
-        {notifOpen && (
+
+        {menuOpen && (
           <div
-            role="region"
-            aria-label="Notifications panel"
+            role="menu"
             style={{
               position: 'absolute',
-              top: '2.5rem',
+              top: 'calc(100% + 0.5rem)',
               right: 0,
-              width: '18rem',
+              minWidth: '11rem',
               background: 'var(--color-surface-container-lowest)',
               border: '1px solid var(--color-outline-variant)',
               borderRadius: 'var(--radius-xl)',
               boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-              padding: '1rem',
+              overflow: 'hidden',
               zIndex: 100,
-              fontSize: '0.85rem',
-              color: 'var(--color-on-surface-variant)',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-              <span style={{ fontWeight: 700, color: 'var(--color-on-surface)', fontSize: '0.9rem' }}>Notifications</span>
-              <button
-                type="button"
-                onClick={() => setNotifOpen(false)}
-                aria-label="Close notifications"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-on-surface-variant)', padding: 0 }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>close</span>
-              </button>
-            </div>
-            <p style={{ textAlign: 'center', padding: '1rem 0' }}>No new notifications</p>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setMenuOpen(false); navigate('/profile'); }}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.625rem',
+                padding: '0.75rem 1rem',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                color: 'var(--color-on-surface)',
+                textAlign: 'left',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--color-on-surface-variant)' }}>person</span>
+              Profile
+            </button>
+            <div style={{ height: '1px', background: 'var(--color-outline-variant)', margin: '0 0.75rem' }} />
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setMenuOpen(false); void signOut(); }}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.625rem',
+                padding: '0.75rem 1rem',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.875rem',
+                color: 'var(--color-error)',
+                textAlign: 'left',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>logout</span>
+              Sign out
+            </button>
           </div>
         )}
       </div>
-      <button
-        aria-label="Settings"
-        type="button"
-        onClick={() => navigate('/profile')}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-on-surface-variant)', padding: 0 }}
-      >
-        <span className="material-symbols-outlined">settings</span>
-      </button>
-      <button
-        onClick={() => navigate('/dashboard')}
-        type="button"
-        className="gradient-editorial"
-        style={{
-          border: 'none',
-          borderRadius: 'var(--radius-full)',
-          padding: '0.5rem 1rem',
-          color: '#fff',
-          fontWeight: 600,
-          fontSize: '0.85rem',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.375rem',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
-          add
-        </span>
-        New Document
-      </button>
-      <button
-        onClick={() => void signOut()}
-        type="button"
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          color: 'var(--color-on-surface-variant)',
-          fontSize: '0.8rem',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        Sign out
-      </button>
     </header>
   );
 }
