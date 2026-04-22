@@ -46,7 +46,8 @@ export type TaskProfile =
   | 'tone'           // per-section tone classification — fast, cheap
   | 'completeness'   // doc structure completeness check — fast, cheap
   | 'citations'      // claim/citation classification — fast, cheap
-  | 'references';    // reference matching — fast, cheap
+  | 'references'     // reference matching — fast, cheap
+  | 'segmentation';  // document section boundary detection — fast, cheap
 
 // ── Per-provider model defaults ───────────────────────────────────────────────
 
@@ -66,6 +67,7 @@ const MODEL_DEFAULTS: Record<string, Record<TaskProfile, string>> = {
     completeness: 'claude-haiku-4-5',
     citations: 'claude-haiku-4-5',
     references: 'claude-haiku-4-5',
+    segmentation: 'claude-haiku-4-5',
   },
   openai: {
     proofreading: 'gpt-4o',
@@ -79,6 +81,7 @@ const MODEL_DEFAULTS: Record<string, Record<TaskProfile, string>> = {
     completeness: 'gpt-4o-mini',
     citations: 'gpt-4o-mini',
     references: 'gpt-4o-mini',
+    segmentation: 'gpt-4o-mini',
   },
 };
 
@@ -94,6 +97,7 @@ const MODEL_ENV_KEYS: Record<TaskProfile, string> = {
   completeness: 'LLM_MODEL_COMPLETENESS',
   citations: 'LLM_MODEL_CITATIONS',
   references: 'LLM_MODEL_REFERENCES',
+  segmentation: 'LLM_MODEL_SEGMENTATION',
 };
 
 // ── Anthropic ────────────────────────────────────────────────────────────────
@@ -224,6 +228,7 @@ async function buildProviderSet(): Promise<ProviderSet> {
   const profiles: TaskProfile[] = [
     'proofreading', 'scoring', 'review', 'humanization',
     'section', 'reformat', 'chat', 'tone', 'completeness', 'citations', 'references',
+    'segmentation',
   ];
 
   if (providerName === 'openai') {

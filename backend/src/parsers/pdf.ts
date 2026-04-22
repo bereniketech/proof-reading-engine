@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import pdf from 'pdf-parse';
+import { segmentWithAI } from './ai-segmenter.js';
 import type { Section } from './types.js';
 
 function normalizeLine(line: string): string {
@@ -79,13 +80,26 @@ function isLikelyHeading(text: string): boolean {
   return false;
 }
 
+function extractRawText(pdfText: string): string {
+  return pdfText
+    .split(/\r?\n/)
+    .map((line: string) => normalizeLine(line))
+    .join('\n');
+}
+
 export async function parsePdf(filePath: string): Promise<Section[]> {
   const buffer = await readFile(filePath);
   const parsed = await pdf(buffer);
+  const rawText = extractRawText(parsed.text);
 
-  const lines = parsed.text
-    .split(/\r?\n/)
-    .map((line: string) => normalizeLine(line));
+  try {
+    return await segmentWithAI(rawText);
+  } catch (err) {
+    console.warn('[parsePdf] AI segmentation failed, falling back to heuristics:', err);
+  }
+
+  // ── Heuristic fallback ────────────────────────────────────────────────────
+  const lines = rawText.split('\n');
 
   const sections: Section[] = [];
   let position = 0;

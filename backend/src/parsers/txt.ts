@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { segmentWithAI } from './ai-segmenter.js';
 import type { Section } from './types.js';
 
 function normalizeText(text: string): string {
@@ -20,6 +21,14 @@ function isAllCapsHeading(text: string): boolean {
 
 export async function parseTxt(filePath: string): Promise<Section[]> {
   const content = await readFile(filePath, 'utf8');
+
+  try {
+    return await segmentWithAI(content);
+  } catch (err) {
+    console.warn('[parseTxt] AI segmentation failed, falling back to heuristics:', err);
+  }
+
+  // ── Heuristic fallback ────────────────────────────────────────────────────
   const rawBlocks = content.split(/\r?\n\s*\r?\n/g);
   const sections: Section[] = [];
   let position = 0;
