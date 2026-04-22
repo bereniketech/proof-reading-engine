@@ -47,6 +47,12 @@ const NON_CONTENT_WORDS = new Set([
 function isTitleCaseHeading(text: string): boolean {
   // Must be short enough to be a heading (≤ 100 chars) and not end with sentence punctuation
   if (text.length > 100 || /[.?!]$/.test(text)) return false;
+  // Lines starting with a digit are list items or numbered scales, never headings
+  if (/^\d/.test(text.trimStart())) return false;
+  // Parenthesized text (e.g. "(APA Style – Recent Research)") is a note, not a heading
+  if (/^\(/.test(text.trimStart())) return false;
+  // "Label: value" patterns (statistical notation, key-value pairs) are not headings
+  if (/:\s*[a-z\d<(χαβ]/.test(text)) return false;
   const words = text.split(/\s+/);
   if (words.length < 2) return false;
 
@@ -214,7 +220,30 @@ function splitIntoBlocks(rawText: string): string[] {
     }
   }
 
-  return merged;
+  // Merge consecutive heading-candidate blocks that are wrapped title lines.
+  // Two adjacent blocks are treated as a wrapped title when:
+  //   - Both are short (≤ 100 chars each, ≤ 160 combined)
+  //   - Neither ends with sentence punctuation
+  //   - Neither is a known standalone section label (those stay separate)
+  //   - Both pass isTitleCaseHeading
+  const result: string[] = [];
+  for (const block of merged) {
+    const prev = result[result.length - 1];
+    if (
+      prev !== undefined &&
+      isTitleCaseHeading(block) &&
+      isTitleCaseHeading(prev) &&
+      !KNOWN_SECTION_LABELS.has(block.toLowerCase()) &&
+      !KNOWN_SECTION_LABELS.has(prev.toLowerCase()) &&
+      prev.length + 1 + block.length <= 160
+    ) {
+      result[result.length - 1] = `${prev} ${block}`;
+    } else {
+      result.push(block);
+    }
+  }
+
+  return result;
 }
 
 // ── Step 2: LLM classification ───────────────────────────────────────────────
