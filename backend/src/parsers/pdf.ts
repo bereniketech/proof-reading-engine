@@ -117,12 +117,16 @@ export async function parsePdf(filePath: string): Promise<Section[]> {
     if (isLikelyHeading(line)) {
       flushParagraphBuffer();
 
-      // Merge into the previous heading if that heading ended without terminal
-      // punctuation — handles long titles that wrap across lines in the PDF.
+      // Merge into the previous heading only when it looks like a wrapped title
+      // line: previous heading has no terminal punctuation AND is not a known
+      // standalone section heading (e.g. "Abstract", "Introduction").
       const prev = sections.at(-1);
+      const prevNormalized = prev ? (prev.original_text.split(/[:(–-]/)[0] ?? '').trim().toLowerCase() : '';
+      const prevIsKnownHeading = KNOWN_SECTION_HEADINGS.has(prevNormalized);
       if (
         prev &&
         prev.section_type === 'heading' &&
+        !prevIsKnownHeading &&
         !/[.!?]$/.test(prev.original_text)
       ) {
         prev.original_text = `${prev.original_text} ${line}`;
