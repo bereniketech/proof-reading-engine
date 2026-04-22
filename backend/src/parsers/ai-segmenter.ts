@@ -1,7 +1,7 @@
 import { getLLMProvider } from '../services/llm-provider.js';
 import type { Section } from './types.js';
 
-const KNOWN_SECTION_LABELS = [
+const KNOWN_SECTION_LABELS = new Set([
   'abstract', 'introduction', 'background', 'literature review', 'related work',
   'methodology', 'method', 'methods', 'materials and methods', 'research design',
   'participants', 'procedure', 'instrument', 'measures', 'data analysis',
@@ -9,7 +9,7 @@ const KNOWN_SECTION_LABELS = [
   'implications', 'limitations', 'future work', 'recommendations',
   'references', 'bibliography', 'works cited', 'acknowledgements', 'acknowledgments',
   'appendix', 'appendices', 'supplementary material', 'objectives of the study',
-].join(', ');
+]);
 
 const SYSTEM_PROMPT = `You are a document structure analyser.
 Given raw text extracted from a document (PDF or plain text), split it into an ordered list of sections.
@@ -17,11 +17,31 @@ Each section is either a "heading" (document title, section label, subtitle) or 
 
 Rules:
 1. TITLE WRAPPING — A document title that wraps across multiple lines is ONE heading. Join the lines into a single heading item.
-2. KNOWN SECTION LABELS — The following words/phrases are always their own standalone heading, never merged with anything before or after them: ${KNOWN_SECTION_LABELS}. If the word "Abstract" appears anywhere, it must be a separate heading item, even if it immediately follows the document title on the next line.
-3. NO MERGING OF DISTINCT HEADINGS — Two different section labels (e.g. "Abstract" then "Introduction") must be two separate heading items.
+2. BLANK LINE = BOUNDARY — A blank line always separates two distinct sections. Never merge content across a blank line.
+3. NO MERGING OF DISTINCT HEADINGS — Two different section labels must be two separate heading items.
 4. PRESERVE ALL TEXT — Do not paraphrase, correct, or omit any content from the input.
 5. OUTPUT FORMAT — Return ONLY a valid JSON array, no markdown fences, no extra keys:
    [{"section_type":"heading"|"paragraph","text":"..."},...]`;
+
+/**
+ * Insert a blank line before any line that is a known section label so the
+ * LLM always sees a structural boundary, even when the PDF has no blank line
+ * between the document title and "Abstract".
+ */
+function preProcessText(text: string): string {
+  const lines = text.split('\n');
+  const out: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim().toLowerCase();
+    if (KNOWN_SECTION_LABELS.has(trimmed) && out.length > 0 && out.at(-1) !== '') {
+      out.push('');
+    }
+    out.push(line);
+  }
+
+  return out.join('\n');
+}
 
 interface RawSegment {
   section_type: 'heading' | 'paragraph';
@@ -41,7 +61,7 @@ export async function segmentWithAI(rawText: string): Promise<Section[]> {
   const response = await provider.chat(
     [
       { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: rawText },
+      { role: 'user', content: preProcessText(rawText) },
     ],
     { temperature: 0, jsonMode: true },
   );
