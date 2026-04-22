@@ -57,7 +57,9 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/editor" element={<EditorPage />} />
             <Route path="/editor/:sessionId" element={<EditorPage />} />
+            <Route path="/insights" element={<InsightsPage />} />
             <Route path="/insights/:sessionId" element={<InsightsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>

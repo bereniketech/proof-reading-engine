@@ -21,6 +21,49 @@ function getVerifiedAccessToken(res: Response): string | null {
 
 export const sessionsListRouter = Router();
 
+sessionsListRouter.delete('/sessions/:id', async (req: Request, res: Response): Promise<void> => {
+  const user = getAuthenticatedUser(res);
+  const accessToken = getVerifiedAccessToken(res);
+  if (!user || !accessToken) {
+    res.status(401).json({ success: false, error: 'Unauthorized' });
+    return;
+  }
+
+  const { id } = req.params;
+  if (!id || typeof id !== 'string') {
+    res.status(400).json({ success: false, error: 'Session ID is required' });
+    return;
+  }
+
+  const supabase = createUserScopedSupabaseClient(accessToken);
+
+  // Verify ownership before deleting
+  const { data: existing, error: fetchError } = await supabase
+    .from('sessions')
+    .select('id')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (fetchError || !existing) {
+    res.status(404).json({ success: false, error: 'Session not found' });
+    return;
+  }
+
+  const { error } = await supabase
+    .from('sessions')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    res.status(500).json({ success: false, error: error.message });
+    return;
+  }
+
+  res.status(200).json({ success: true, data: null });
+});
+
 sessionsListRouter.get('/sessions', async (req: Request, res: Response): Promise<void> => {
   const user = getAuthenticatedUser(res);
   const accessToken = getVerifiedAccessToken(res);

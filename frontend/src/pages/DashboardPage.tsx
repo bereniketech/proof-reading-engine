@@ -259,7 +259,12 @@ export function DashboardPage(){
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1rem' }}>
             {sessions.map((s) => (
-              <DocumentCard key={s.id} session={s} onClick={() => navigate(`/editor/${s.id}`)} />
+              <DocumentCard
+                key={s.id}
+                session={s}
+                onClick={() => navigate(`/editor/${s.id}`)}
+                onDeleted={(id) => setSessions((prev) => prev.filter((x) => x.id !== id))}
+              />
             ))}
           </div>
         )}

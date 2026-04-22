@@ -1365,6 +1365,8 @@ p {
   .main-content {
     margin-left: 16rem !important;
     transition: margin-left var(--duration-fast);
+    min-width: 0;
+    overflow-x: hidden;
   }
 
   .main-content.sidebar-collapsed {

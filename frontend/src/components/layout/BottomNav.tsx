@@ -29,14 +29,14 @@ function getBottomNavItems(pathname: string): BottomNavItem[] {
     {
       icon: 'edit_note',
       label: 'Editor',
-      href: pathname.startsWith('/editor/') ? pathname : getStoredPath(LAST_EDITOR_PATH_KEY) ?? '/dashboard',
-      isActive: (currentPathname) => currentPathname.startsWith('/editor/'),
+      href: pathname.startsWith('/editor/') ? pathname : getStoredPath(LAST_EDITOR_PATH_KEY) ?? '/editor',
+      isActive: (currentPathname) => currentPathname.startsWith('/editor'),
     },
     {
       icon: 'bar_chart',
       label: 'Insights',
-      href: pathname.startsWith('/insights/') ? pathname : getStoredPath(LAST_INSIGHTS_PATH_KEY) ?? '/dashboard',
-      isActive: (currentPathname) => currentPathname.startsWith('/insights/'),
+      href: pathname.startsWith('/insights/') ? pathname : getStoredPath(LAST_INSIGHTS_PATH_KEY) ?? '/insights',
+      isActive: (currentPathname) => currentPathname.startsWith('/insights'),
     },
     {
       icon: 'person',
