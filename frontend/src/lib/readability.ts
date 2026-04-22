@@ -215,9 +215,7 @@ export function computeReadabilityScore(
   if (words.length < 10) return null;
 
   const formula: ReadabilityFormula =
-    documentType in FORMULA_MAP
-      ? FORMULA_MAP[documentType as DocumentTypeValue]
-      : 'flesch_kincaid';
+    (documentType in FORMULA_MAP ? FORMULA_MAP[documentType as DocumentTypeValue] : undefined) ?? 'flesch_kincaid';
 
   const rawGrade = (() => {
     switch (formula) {

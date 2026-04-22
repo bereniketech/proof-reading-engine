@@ -115,11 +115,22 @@ export const DOCUMENT_TYPE_CATEGORIES = [
       { value: 'public_comment',       label: 'Public Comment / Submission' },
     ],
   },
-] as const;
+];
 
-export const DOCUMENT_TYPES = DOCUMENT_TYPE_CATEGORIES.flatMap((c) => c.types);
+export interface DocumentTypeEntry {
+  value: string;
+  label: string;
+}
 
-export type DocumentTypeValue = typeof DOCUMENT_TYPES[number]['value'];
+export interface DocumentTypeCategory {
+  value: string;
+  label: string;
+  types: DocumentTypeEntry[];
+}
+
+export const DOCUMENT_TYPES: DocumentTypeEntry[] = DOCUMENT_TYPE_CATEGORIES.flatMap((c) => c.types);
+
+export type DocumentTypeValue = string;
 
 export const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 export const ACCEPTED_EXTENSIONS = ['docx', 'pdf', 'txt'] as const;
