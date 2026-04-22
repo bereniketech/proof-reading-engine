@@ -56,8 +56,7 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
 
   return (
     <aside
-      onClick={onToggleCollapse ? (e) => { if (e.target === e.currentTarget) onToggleCollapse(); } : undefined}
-      title={onToggleCollapse ? (collapsed ? 'Expand sidebar' : 'Collapse sidebar') : undefined}
+      onClick={onToggleCollapse}
       style={{
         width,
         minHeight: '100vh',
@@ -74,7 +73,7 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
         boxShadow: '0 16px 40px var(--color-shadow-card)',
         transition: 'width var(--duration-fast), padding var(--duration-fast)',
         overflow: 'visible',
-        cursor: onToggleCollapse ? 'pointer' : undefined,
+        cursor: onToggleCollapse ? 'pointer' : 'default',
       }}
     >
       {/* Logo row */}
@@ -113,7 +112,8 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
               key={item.label}
               type="button"
               title={collapsed ? item.label : undefined}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 navigate(item.href);
                 onNavigate?.();
               }}
