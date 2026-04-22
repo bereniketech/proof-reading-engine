@@ -3,7 +3,7 @@ import { Router } from 'express';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminSupabaseClient, createUserScopedSupabaseClient } from '../lib/supabase.js';
 import { applySectionInstruction } from '../services/openai.js';
-import { matchReferencesToSections, NoReferencesSectionError } from '../services/reference-matcher.js';
+import { matchReferencesToSections, suggestReferencesForSection, NoReferencesSectionError } from '../services/reference-matcher.js';
 
 type SectionType = 'heading' | 'paragraph';
 type InsertPlacement = 'above' | 'below';
@@ -1063,6 +1063,35 @@ router.post('/sessions/:sessionId/merge-sections', async (req: Request, res: Res
     });
   } catch (error) {
     serverError(res, error instanceof Error ? error.message : 'Failed to merge sections.');
+  }
+});
+
+router.post('/sections/:id/suggest-references', async (req: Request, res: Response) => {
+  const authToken = getVerifiedAccessToken(res);
+  const authenticatedUser = getAuthenticatedUser(res);
+  const sectionId = typeof req.params.id === 'string' ? req.params.id : '';
+
+  if (!authToken || !authenticatedUser) { unauthorized(res); return; }
+  if (!isUuid(sectionId)) { badRequest(res, 'Invalid section id format.'); return; }
+
+  const supabase = createUserScopedSupabaseClient(authToken);
+  const { data: section, error: fetchError } = await supabase
+    .from('sections')
+    .select('id, session_id')
+    .eq('id', sectionId)
+    .single();
+
+  if (fetchError || !section) { notFound(res); return; }
+
+  const ownerId = await getSessionOwnerId((section as { session_id: string }).session_id);
+  if (!ownerId || ownerId !== authenticatedUser.id) { forbidden(res); return; }
+
+  try {
+    const positions = await suggestReferencesForSection(sectionId, (section as { session_id: string }).session_id);
+    res.status(200).json({ success: true, data: { suggested_positions: positions } });
+  } catch (error) {
+    if (error instanceof NoReferencesSectionError) { badRequest(res, error.message); return; }
+    serverError(res, error instanceof Error ? error.message : 'AI suggestion failed.');
   }
 });
 

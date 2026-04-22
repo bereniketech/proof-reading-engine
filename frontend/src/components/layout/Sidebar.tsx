@@ -77,7 +77,7 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
         zIndex: 40,
         boxShadow: '0 16px 40px var(--color-shadow-card)',
         transition: 'width var(--duration-fast), padding var(--duration-fast)',
-        overflow: 'hidden',
+        overflow: 'visible',
       }}
     >
       {/* Logo row */}
@@ -172,7 +172,7 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
         </div>
       )}
 
-      {/* Collapse toggle */}
+      {/* Collapse toggle — mounted on the right edge, vertically centred */}
       {onToggleCollapse && (
         <button
           type="button"
@@ -180,23 +180,35 @@ export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: Sid
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           style={{
+            position: 'absolute',
+            top: '50%',
+            right: '-1rem',
+            transform: 'translateY(-50%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginTop: '0.5rem',
-            padding: '0.5rem',
-            borderRadius: 'var(--radius-lg)',
-            border: 'none',
+            width: '1.25rem',
+            height: '3rem',
+            borderRadius: '0 var(--radius-lg) var(--radius-lg) 0',
+            border: '1px solid var(--color-outline-variant)',
+            borderLeft: 'none',
             cursor: 'pointer',
-            background: 'transparent',
+            background: 'var(--color-surface-container-low)',
             color: 'var(--color-on-surface-variant)',
-            width: '100%',
-            transition: 'background var(--duration-fast)',
+            boxShadow: '2px 0 6px rgba(0,0,0,0.08)',
+            zIndex: 41,
+            transition: 'background var(--duration-fast), color var(--duration-fast)',
           }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-container-highest)'; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-container-highest)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-container-low)';
+            (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-on-surface-variant)';
+          }}
         >
-          <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
             {collapsed ? 'chevron_right' : 'chevron_left'}
           </span>
         </button>

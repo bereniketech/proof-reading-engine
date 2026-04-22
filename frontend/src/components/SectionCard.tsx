@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 type SectionType = 'heading' | 'paragraph';
 type SectionStatus = 'pending' | 'ready' | 'accepted' | 'rejected';
@@ -56,6 +56,7 @@ interface SectionCardProps {
   readonly onEditedTextChange: (nextValue: string) => void;
   readonly onInstructionTextChange: (value: string) => void;
   readonly onApplyInstruction: () => Promise<void>;
+  readonly onSuggestReferences: () => Promise<number[]>;
   readonly onLinkedReferencePositionsChange: (positions: number[]) => Promise<void>;
   readonly onAccept: () => Promise<void>;
   readonly onReject: () => Promise<void>;
@@ -190,6 +191,7 @@ export function SectionCard({
   onEditedTextChange,
   onInstructionTextChange,
   onApplyInstruction,
+  onSuggestReferences,
   onLinkedReferencePositionsChange,
   onAccept,
   onReject,
@@ -217,6 +219,17 @@ export function SectionCard({
   const linkedPositionSet = useMemo(
     () => new Set(linkedReferencePositions),
     [linkedReferencePositions],
+  );
+
+  // AI-powered citation suggestions for this section
+  const [aiSuggestedPositions, setAiSuggestedPositions] = useState<Set<number>>(new Set());
+  const [isSuggestingRefs, setIsSuggestingRefs] = useState(false);
+  const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<number>>(new Set());
+
+  const visibleSuggestions = useMemo(
+    () => new Set([...aiSuggestedPositions].filter((p) => !dismissedSuggestions.has(p) && !linkedPositionSet.has(p))),
+    [aiSuggestedPositions, dismissedSuggestions, linkedPositionSet],
   );
 
   return (
@@ -321,21 +334,103 @@ export function SectionCard({
 
       {referenceOptions.length > 0 && canLinkReferences ? (
         <div className="section-block">
-          <h2 className="section-block-label">Citations used in this section</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+            <h2 className="section-block-label" style={{ margin: 0 }}>Citations used in this section</h2>
+            <button
+              type="button"
+              disabled={isSuggestingRefs || isPending}
+              onClick={() => {
+                setIsSuggestingRefs(true);
+                setSuggestError(null);
+                setDismissedSuggestions(new Set());
+                onSuggestReferences().then((positions) => {
+                  setAiSuggestedPositions(new Set(positions));
+                  setIsSuggestingRefs(false);
+                }).catch((err: unknown) => {
+                  setSuggestError(err instanceof Error ? err.message : 'AI suggestion failed.');
+                  setIsSuggestingRefs(false);
+                });
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.35rem',
+                padding: '0.3rem 0.7rem', borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-outline-variant)',
+                background: 'transparent', cursor: isSuggestingRefs ? 'wait' : 'pointer',
+                fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 600,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '0.95rem' }}>auto_awesome</span>
+              {isSuggestingRefs ? 'Analysing…' : 'Suggest with AI'}
+            </button>
+          </div>
           <p className="section-block-content section-block-content--summary">
             Tick each reference entry cited here. The exported PDF will append citation markers for the selected references automatically.
           </p>
+          {suggestError ? (
+            <p className="review-status-message review-status-message--error" role="alert" style={{ marginBottom: '0.5rem' }}>{suggestError}</p>
+          ) : null}
+          {visibleSuggestions.size > 0 ? (
+            <div style={{
+              marginBottom: '0.75rem', padding: '0.6rem 0.75rem',
+              borderRadius: 'var(--radius-lg)', background: 'rgba(var(--color-primary-rgb, 58,56,139), 0.06)',
+              border: '1px solid var(--color-outline-variant)',
+            }}>
+              <p style={{ margin: '0 0 0.4rem', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-primary)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', verticalAlign: 'middle', marginRight: '0.25rem' }}>tips_and_updates</span>
+                AI found {visibleSuggestions.size} likely citation{visibleSuggestions.size === 1 ? '' : 's'} — confirm below
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {[...visibleSuggestions].map((pos) => {
+                  const ref = referenceOptions.find((r) => r.position === pos);
+                  if (!ref) return null;
+                  return (
+                    <div key={pos} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextSet = new Set(linkedPositionSet);
+                          nextSet.add(pos);
+                          void onLinkedReferencePositionsChange(Array.from(nextSet.values()).sort((a, b) => a - b));
+                          setAiSuggestedPositions((prev) => { const s = new Set(prev); s.delete(pos); return s; });
+                        }}
+                        style={{
+                          padding: '0.2rem 0.55rem', borderRadius: 'var(--radius-full)',
+                          border: '1px solid var(--color-primary)', background: 'var(--color-primary)',
+                          color: '#fff', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600,
+                        }}
+                      >
+                        ✓ Ref {pos + 1}
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Dismiss suggestion"
+                        onClick={() => setDismissedSuggestions((prev) => new Set([...prev, pos]))}
+                        style={{
+                          padding: '0.15rem 0.4rem', borderRadius: 'var(--radius-full)',
+                          border: '1px solid var(--color-outline-variant)', background: 'transparent',
+                          color: 'var(--color-on-surface-variant)', fontSize: '0.7rem', cursor: 'pointer',
+                        }}
+                      >✕</button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
           <p className="section-reference-selected-count">
             {linkedReferencePositions.length} reference{linkedReferencePositions.length === 1 ? '' : 's'} selected
           </p>
           <div className="reference-link-list" role="group" aria-label="Reference links">
             {referenceOptions.map((referenceOption) => {
               const checked = linkedPositionSet.has(referenceOption.position);
+              const isSuggested = visibleSuggestions.has(referenceOption.position);
 
               return (
                 <label
                   key={referenceOption.position}
                   className="reference-link-item"
+                  style={isSuggested ? { background: 'rgba(var(--color-primary-rgb, 58,56,139), 0.06)', borderRadius: 'var(--radius-md)' } : undefined}
                 >
                   <input
                     type="checkbox"
@@ -345,14 +440,15 @@ export function SectionCard({
                       const nextSet = new Set(linkedPositionSet);
                       if (event.target.checked) {
                         nextSet.add(referenceOption.position);
+                        setAiSuggestedPositions((prev) => { const s = new Set(prev); s.delete(referenceOption.position); return s; });
                       } else {
                         nextSet.delete(referenceOption.position);
                       }
-
                       void onLinkedReferencePositionsChange(Array.from(nextSet.values()).sort((a, b) => a - b));
                     }}
                   />
                   <span className="reference-link-number">Ref {referenceOption.position + 1}</span>
+                  {isSuggested ? <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-primary)', marginLeft: '0.25rem', letterSpacing: '0.03rem' }}>AI</span> : null}
                   <span className="reference-link-text">{referenceOption.text}</span>
                 </label>
               );

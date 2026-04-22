@@ -184,6 +184,36 @@ async function callGpt(prompt: string): Promise<string> {
   throw new Error(`Reference matching GPT call failed${detail}`);
 }
 
+export async function suggestReferencesForSection(
+  sectionId: string,
+  sessionId: string,
+): Promise<number[]> {
+  const supabase = createAdminSupabaseClient();
+
+  const { data: sections, error: fetchError } = await supabase
+    .from('sections')
+    .select(
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+    )
+    .eq('session_id', sessionId)
+    .order('position', { ascending: true });
+
+  if (fetchError) throw new Error(`Failed to fetch sections: ${fetchError.message}`);
+
+  const allSections = (sections ?? []) as Section[];
+  const { entries } = extractReferenceSections(allSections);
+  if (entries.length === 0) throw new NoReferencesSectionError();
+
+  const targetSection = allSections.find((s) => s.id === sectionId);
+  if (!targetSection) throw new Error('Section not found.');
+
+  const validPositions = new Set(entries.map((e) => e.position));
+  const prompt = buildMatcherPrompt(entries, [targetSection]);
+  const rawContent = await callGpt(prompt);
+  const matches = parseGptOutput(rawContent, validPositions);
+  return matches.find((m) => m.section_id === sectionId)?.cited_reference_positions ?? [];
+}
+
 export async function matchReferencesToSections(sessionId: string): Promise<{
   summary: ReferenceMatchSummary;
   sections: Section[];

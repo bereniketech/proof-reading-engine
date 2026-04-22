@@ -461,6 +461,17 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
     return (body as SectionPatchSuccessResponse).data;
   };
 
+  const suggestReferencesForSection = async (sectionId: string): Promise<number[]> => {
+    if (!supabaseSession) throw new Error('You are not authenticated.');
+    const response = await fetch(`${apiBaseUrl}/api/sections/${encodeURIComponent(sectionId)}/suggest-references`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${supabaseSession.access_token}` },
+    });
+    const body = await response.json() as { success?: boolean; data?: { suggested_positions: number[] }; error?: string };
+    if (!response.ok || !body.success) throw new Error(body.error ?? 'AI suggestion failed.');
+    return body.data?.suggested_positions ?? [];
+  };
+
   const getEditedText = (section: SectionRecord): string => {
     return editedTextBySectionId[section.id] ?? section.final_text ?? section.corrected_text ?? '';
   };
@@ -1217,6 +1228,7 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
                 setInstructionError(null);
               }}
               onApplyInstruction={handleApplyInstruction}
+              onSuggestReferences={() => suggestReferencesForSection(activeSection.id)}
               onLinkedReferencePositionsChange={handleLinkedReferencesChange}
               onAccept={handleAccept}
               onReject={handleReject}
