@@ -157,6 +157,7 @@ export function LoginPage(){
 
         <button
           type="button"
+          onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/dashboard` } })}
           style={{
             width: '100%',
             display: 'flex',
@@ -312,41 +313,6 @@ export function LoginPage(){
         )}
       </div>
 
-      <div
-        className="glass"
-        aria-hidden
-        style={{
-          position: 'absolute',
-          bottom: '2rem',
-          right: '2rem',
-          padding: '0.875rem 1.25rem',
-          borderRadius: 'var(--radius-xl)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.625rem',
-          boxShadow: '0 8px 24px rgba(19,27,46,0.1)',
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-      >
-        <span className="material-symbols-outlined" style={{ color: 'var(--color-tertiary-fixed-dim)', fontSize: '1.25rem' }}>
-          auto_awesome
-        </span>
-        <div>
-          <div
-            style={{
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08rem',
-              color: 'var(--color-on-surface-variant)',
-            }}
-          >
-            AI Insight
-          </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--color-on-surface)' }}>Ready to improve your writing</div>
-        </div>
-      </div>
     </main>
   );
 }
