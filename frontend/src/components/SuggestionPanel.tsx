@@ -39,17 +39,18 @@ interface SuggestionPanelProps {
   sections: SectionForPanel[];
   accessToken: string;
   onSectionAccepted: (sectionId: string) => void;
+  activeSectionId?: string | null;
 }
 
 function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max - 1) + '…' : text;
 }
 
-export function SuggestionPanel({ sections, accessToken, onSectionAccepted }: SuggestionPanelProps){
+export function SuggestionPanel({ sections, accessToken, onSectionAccepted, activeSectionId }: SuggestionPanelProps){
   const [accepting, setAccepting] = useState<Set<string>>(new Set());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const suggestions: Suggestion[] = sections
+  const allSuggestions: Suggestion[] = sections
     .filter((s) => s.corrected_text && s.corrected_text !== s.original_text && s.status !== 'accepted' && s.status !== 'rejected')
     .map((s) => ({
       sectionId: s.id,
@@ -58,6 +59,10 @@ export function SuggestionPanel({ sections, accessToken, onSectionAccepted }: Su
       corrected: s.corrected_text!,
       summary: s.change_summary,
     }));
+
+  const suggestions = activeSectionId
+    ? allSuggestions.filter((s) => s.sectionId === activeSectionId)
+    : allSuggestions;
 
   const handleAccept = async (suggestion: Suggestion): Promise<void> => {
     setAccepting((prev) => new Set(prev).add(suggestion.sectionId));
@@ -98,13 +103,13 @@ export function SuggestionPanel({ sections, accessToken, onSectionAccepted }: Su
           <h2 className="font-display" style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--color-on-surface)' }}>
             AI Suggestions
           </h2>
-          {suggestions.length > 0 && (
+          {allSuggestions.length > 0 && (
             <span style={{
               background: 'var(--color-surface-container-highest)', color: 'var(--color-primary)',
               fontSize: '0.7rem', fontWeight: 800, padding: '0.2rem 0.6rem',
               borderRadius: 'var(--radius-full)', letterSpacing: '0.05rem',
             }}>
-              {suggestions.length} NEW
+              {allSuggestions.length} NEW
             </span>
           )}
         </div>
@@ -115,7 +120,11 @@ export function SuggestionPanel({ sections, accessToken, onSectionAccepted }: Su
         {suggestions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--color-on-surface-variant)' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.75rem', color: 'var(--color-tertiary-fixed-dim)' }}>check_circle</span>
-            <p style={{ margin: 0, fontSize: '0.85rem' }}>All suggestions reviewed</p>
+            <p style={{ margin: 0, fontSize: '0.85rem' }}>
+              {activeSectionId && allSuggestions.length > 0
+                ? 'No suggestions for this paragraph'
+                : 'All suggestions reviewed'}
+            </p>
           </div>
         ) : (
           suggestions.map((suggestion) => {
@@ -188,7 +197,7 @@ export function SuggestionPanel({ sections, accessToken, onSectionAccepted }: Su
           <div style={{ fontSize: '0.65rem', color: 'var(--color-on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.05rem' }}>Words</div>
         </div>
         <div style={{ flex: 1, textAlign: 'center', background: 'var(--color-surface-container)', borderRadius: 'var(--radius-lg)', padding: '0.5rem' }}>
-          <div className="font-display" style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-tertiary)' }}>{suggestions.length}</div>
+          <div className="font-display" style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-tertiary)' }}>{allSuggestions.length}</div>
           <div style={{ fontSize: '0.65rem', color: 'var(--color-on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.05rem' }}>Pending</div>
         </div>
       </div>

@@ -22,7 +22,7 @@ export function InsightsPage(){
   const [error, setError] = useState<string | null>(null);
 
   const fetchInsights = useCallback(async (): Promise<void> => {
-    if (!session || !sessionId) return;
+    if (!session || !sessionId) { setLoading(false); return; }
     setLoading(true); setError(null);
     try {
       const res = await fetch(`${apiBaseUrl}/api/sessions/${sessionId}/insights`, {

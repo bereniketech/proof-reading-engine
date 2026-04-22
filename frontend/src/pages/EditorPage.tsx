@@ -22,6 +22,7 @@ export function EditorPage(){
 
   const [sections, setSections] = useState<SectionForPanel[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const accessToken = session?.access_token ?? '';
@@ -75,7 +76,7 @@ export function EditorPage(){
       {/* Left: editor canvas */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          <ReviewPage sessionId={sessionId} />
+          <ReviewPage sessionId={sessionId} onActiveSectionChange={setActiveSectionId} />
         </div>
       </div>
 
@@ -112,6 +113,7 @@ export function EditorPage(){
           sections={sections}
           accessToken={accessToken}
           onSectionAccepted={handleSectionAccepted}
+          activeSectionId={activeSectionId}
         />
       </div>
 

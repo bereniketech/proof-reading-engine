@@ -661,6 +661,7 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .review-header-left {
@@ -692,11 +693,13 @@ p {
   align-items: center;
   gap: 0.6rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .reference-style-picker {
-  display: grid;
-  gap: 0.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .reference-style-picker span {
@@ -705,6 +708,7 @@ p {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--color-primary-muted);
+  white-space: nowrap;
 }
 
 .review-export-button {
@@ -1389,14 +1393,12 @@ p {
   }
 
   .review-header {
-    flex-direction: column;
     align-items: flex-start;
     padding: 0.75rem 1rem;
   }
 
   .review-header-right {
     width: 100%;
-    flex-wrap: wrap;
   }
 
   .review-export-button {

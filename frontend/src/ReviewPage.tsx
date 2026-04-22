@@ -257,9 +257,10 @@ function StatusBadge({ status }: { readonly status: SectionStatus }) {
 
 interface ReviewPageProps {
   sessionId?: string;
+  onActiveSectionChange?: (sectionId: string | null) => void;
 }
 
-export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps = {}) {
+export default function ReviewPage({ sessionId: propSessionId, onActiveSectionChange }: ReviewPageProps = {}) {
   const [supabaseSession, setSupabaseSession] = useState<SupabaseSession | null>(null);
   const [payload, setPayload] = useState<SessionPayload | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
@@ -296,6 +297,10 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   const cancelledRef = useRef(false);
 
   const sessionId = propSessionId ?? getSessionIdFromUrl();
+
+  useEffect(() => {
+    onActiveSectionChange?.(activeSectionId);
+  }, [activeSectionId, onActiveSectionChange]);
 
   // Initialize Supabase auth
   useEffect(() => {
