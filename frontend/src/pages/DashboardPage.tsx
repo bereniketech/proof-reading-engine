@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { DocumentCard, type SessionListItem } from '../components/DocumentCard';
 import { DiffPanel } from '../components/DiffPanel';
-import { DOCUMENT_TYPES, apiBaseUrl, validateUploadFile, formatBytes, isUploadSuccessResponse } from '../lib/constants';
+import { DOCUMENT_TYPE_CATEGORIES, apiBaseUrl, validateUploadFile, formatBytes, isUploadSuccessResponse } from '../lib/constants';
 
 export function DashboardPage(){
   const { session } = useAuth();
   const navigate = useNavigate();
 
   // Upload state
+  const [docCategory, setDocCategory] = useState('general');
   const [documentType, setDocumentType] = useState('general');
   const [mainFile, setMainFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -166,13 +167,41 @@ export function DashboardPage(){
         <div style={{ background: 'var(--color-surface-container-lowest)', borderRadius: 'var(--radius-card)', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <h2 className="font-display" style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Upload Document</h2>
 
-          {/* Document type select */}
-          <label className="field">
-            <span>Document type</span>
-            <select className="field-select" value={documentType} onChange={(e) => setDocumentType(e.target.value)} disabled={isUploading}>
-              {DOCUMENT_TYPES.map((dt) => <option key={dt.value} value={dt.value}>{dt.label}</option>)}
-            </select>
-          </label>
+          {/* Document type — category then specific type */}
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <label className="field" style={{ flex: 1 }}>
+              <span>Category</span>
+              <select
+                className="field-select"
+                value={docCategory}
+                disabled={isUploading}
+                onChange={(e) => {
+                  const cat = DOCUMENT_TYPE_CATEGORIES.find((c) => c.value === e.target.value);
+                  setDocCategory(e.target.value);
+                  setDocumentType(cat?.types[0].value ?? 'general');
+                }}
+              >
+                {DOCUMENT_TYPE_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </label>
+            {docCategory !== 'general' && (
+              <label className="field" style={{ flex: 1 }}>
+                <span>Document type</span>
+                <select
+                  className="field-select"
+                  value={documentType}
+                  disabled={isUploading}
+                  onChange={(e) => setDocumentType(e.target.value)}
+                >
+                  {(DOCUMENT_TYPE_CATEGORIES.find((c) => c.value === docCategory)?.types ?? []).map((dt) => (
+                    <option key={dt.value} value={dt.value}>{dt.label}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
 
           {/* Drag-drop zone */}
           <label
