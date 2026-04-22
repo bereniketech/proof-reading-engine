@@ -90,7 +90,7 @@ export function DashboardPage(){
 
     const formData = new FormData();
     formData.append('file', mainFile);
-    formData.append('documentType', documentType);
+    formData.append('document_type', documentType);
 
     const xhr = new XMLHttpRequest();
 
