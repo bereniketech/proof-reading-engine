@@ -459,8 +459,8 @@ router.post('/upload', uploadFields, async (req: Request, res: Response) => {
     });
 
     res.status(201).json({
-      sessionId: data.id,
-      status: 'proofreading',
+      success: true,
+      data: { sessionId: data.id, status: 'proofreading' },
     });
   } catch (error) {
     await cleanupUploadedFiles([mainFile]);
