@@ -3,9 +3,24 @@
 -- Wipes all app data from the proof-reading-engine database.
 -- Run in: Supabase Dashboard → SQL Editor → New query → Run
 -- ============================================================
+-- Table hierarchy (parent → child):
+--   sessions
+--     └── sections          (FK: session_id → sessions.id CASCADE)
+--     └── chat_messages     (FK: session_id → sessions.id CASCADE)
+--
+-- sessions columns reset by this wipe:
+--   review_score, review_report         (task-004)
+--   tone_consistency_score, tone_report (task-005)
+--   completeness_score, completeness_report (task-006)
+--   citations_report                    (task-012)
+--
+-- sections columns reset by this wipe:
+--   tone_label, tone_score              (task-005)
+--   reformatted_text, reformat_type     (task-008)
+-- ============================================================
 
--- App tables (sections first — foreign key child of sessions)
-TRUNCATE TABLE sections, sessions RESTART IDENTITY CASCADE;
+-- Child tables first, then parent (CASCADE handles the rest)
+TRUNCATE TABLE chat_messages, sections, sessions RESTART IDENTITY CASCADE;
 
 -- ============================================================
 -- Optional: wipe Supabase Auth users
