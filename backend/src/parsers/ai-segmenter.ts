@@ -39,9 +39,12 @@ function preProcessText(text: string): string {
   const sortedLabels = [...KNOWN_SECTION_LABELS].sort((a, b) => b.length - a.length);
   const escaped = sortedLabels.map((l) => l.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 
-  // Split any label that is glued at the end of a preceding line with no newline
-  // (e.g. "...Questionnaire Study Abstract" → "...Questionnaire Study\nAbstract").
-  const endGlueRe = new RegExp(`(\\S)\\s+(${escaped.join('|')})$`, 'gim');
+  // Split a known label off the end of the line it is glued to.
+  // Uses the `m` flag so ^ and $ match per-line, making it reliable regardless
+  // of whether the label is mid-string or at the very end of the full text.
+  // The label must be preceded by a non-whitespace char to avoid splitting
+  // lines that ARE already just the label on its own.
+  const endGlueRe = new RegExp(`(\\S)[ \\t]+(${escaped.join('|')})$`, 'gim');
   const split = text.replace(endGlueRe, '$1\n$2');
 
   // Ensure a blank line precedes every line that is exactly a known label.
