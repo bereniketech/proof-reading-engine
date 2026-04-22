@@ -116,21 +116,11 @@ export function LoginPage(){
             gap: '0.75rem',
           }}
         >
-          <div
-            style={{
-              width: '4rem',
-              height: '4rem',
-              borderRadius: 'var(--radius-xl)',
-              background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-container))',
-              display: 'grid',
-              placeItems: 'center',
-              color: '#fff',
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>
-              auto_stories
-            </span>
-          </div>
+          <img
+            src="/favicon.png"
+            alt="Editorial Intelligence"
+            style={{ width: '4rem', height: '4rem', borderRadius: 'var(--radius-xl)' }}
+          />
           <h1
             className="font-display"
             style={{

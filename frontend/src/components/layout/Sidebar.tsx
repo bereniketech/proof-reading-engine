@@ -75,22 +75,11 @@ export function Sidebar({ onNavigate }: SidebarProps) {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-        <div
-          className="gradient-editorial"
-          style={{
-            width: '3rem',
-            height: '3rem',
-            borderRadius: 'var(--radius-xl)',
-            display: 'grid',
-            placeItems: 'center',
-            color: '#fff',
-            flexShrink: 0,
-          }}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '1.5rem' }}>
-            auto_stories
-          </span>
-        </div>
+        <img
+          src="/favicon.png"
+          alt="Editorial Intelligence"
+          style={{ width: '3rem', height: '3rem', borderRadius: 'var(--radius-xl)', flexShrink: 0 }}
+        />
         <div>
           <div className="font-display" style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-on-surface)' }}>
             AI Curator
