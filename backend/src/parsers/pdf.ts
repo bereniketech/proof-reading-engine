@@ -6,6 +6,16 @@ function normalizeLine(line: string): string {
   return line.replace(/\s+/g, ' ').trim();
 }
 
+const KNOWN_SECTION_HEADINGS = new Set([
+  'abstract', 'introduction', 'background', 'literature review', 'related work',
+  'methodology', 'method', 'methods', 'materials and methods', 'research design',
+  'participants', 'procedure', 'instrument', 'measures', 'data analysis',
+  'results', 'findings', 'discussion', 'conclusion', 'conclusions',
+  'implications', 'limitations', 'future work', 'recommendations',
+  'references', 'bibliography', 'works cited', 'acknowledgements', 'acknowledgments',
+  'appendix', 'appendices', 'supplementary material',
+]);
+
 function isLikelyHeading(text: string): boolean {
   if (text.length === 0 || text.length > 120) {
     return false;
@@ -16,7 +26,13 @@ function isLikelyHeading(text: string): boolean {
     return true;
   }
 
-  return /^\d+(\.\d+)*\s+[A-Z].{0,90}$/.test(text);
+  if (/^\d+(\.\d+)*\s+[A-Z].{0,90}$/.test(text)) {
+    return true;
+  }
+
+  // Match known academic section headings (possibly with a subtitle after a colon/dash/paren)
+  const normalized = text.split(/[:(–\-]/)[0].trim().toLowerCase();
+  return KNOWN_SECTION_HEADINGS.has(normalized);
 }
 
 export async function parsePdf(filePath: string): Promise<Section[]> {

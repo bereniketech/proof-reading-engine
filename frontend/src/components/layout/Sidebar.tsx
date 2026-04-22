@@ -5,6 +5,8 @@ const LAST_INSIGHTS_PATH_KEY = 'editorial.lastInsightsPath';
 
 interface SidebarProps {
   onNavigate?: () => void;
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 type NavItem = {
@@ -51,20 +53,22 @@ function getNavItems(pathname: string): NavItem[] {
   ];
 }
 
-export function Sidebar({ onNavigate }: SidebarProps) {
+export function Sidebar({ onNavigate, collapsed = false, onToggleCollapse }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const navItems = getNavItems(location.pathname);
 
+  const width = collapsed ? '4.5rem' : '16rem';
+
   return (
     <aside
       style={{
-        width: '16rem',
+        width,
         minHeight: '100vh',
         background: 'var(--color-surface-container-low)',
         display: 'flex',
         flexDirection: 'column',
-        padding: '1.5rem 1rem',
+        padding: collapsed ? '1.5rem 0.75rem' : '1.5rem 1rem',
         gap: '0.5rem',
         position: 'fixed',
         top: 0,
@@ -72,22 +76,37 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         bottom: 0,
         zIndex: 40,
         boxShadow: '0 16px 40px var(--color-shadow-card)',
+        transition: 'width var(--duration-fast), padding var(--duration-fast)',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+      {/* Logo row */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          marginBottom: '2rem',
+          justifyContent: collapsed ? 'center' : 'flex-start',
+          overflow: 'hidden',
+        }}
+      >
         <img
           src="/favicon.png"
           alt="Editorial Intelligence"
           style={{ width: '3rem', height: '3rem', borderRadius: 'var(--radius-xl)', flexShrink: 0 }}
         />
-        <div>
-          <div className="font-display" style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-on-surface)' }}>
-            AI Curator
+        {!collapsed && (
+          <div style={{ overflow: 'hidden' }}>
+            <div className="font-display" style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-on-surface)', whiteSpace: 'nowrap' }}>
+              AI Curator
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--color-on-surface-variant)', letterSpacing: '0.05rem' }}>v2.4</div>
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--color-on-surface-variant)', letterSpacing: '0.05rem' }}>v2.4</div>
-        </div>
+        )}
       </div>
 
+      {/* Nav items */}
       <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.25rem' }} aria-label="Primary">
         {navItems.map((item) => {
           const isActive = item.isActive(location.pathname);
@@ -96,6 +115,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
             <button
               key={item.label}
               type="button"
+              title={collapsed ? item.label : undefined}
               onClick={() => {
                 navigate(item.href);
                 onNavigate?.();
@@ -103,6 +123,7 @@ export function Sidebar({ onNavigate }: SidebarProps) {
               style={{
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: collapsed ? 'center' : 'flex-start',
                 gap: '0.75rem',
                 padding: '0.625rem 0.875rem',
                 borderRadius: 'var(--radius-lg)',
@@ -122,30 +143,64 @@ export function Sidebar({ onNavigate }: SidebarProps) {
                 className="material-symbols-outlined"
                 style={{
                   fontSize: '1.25rem',
+                  flexShrink: 0,
                   fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
                 }}
               >
                 {item.icon}
               </span>
-              {item.label}
+              {!collapsed && item.label}
             </button>
           );
         })}
       </nav>
 
-      <div
-        style={{
-          padding: '1rem',
-          borderRadius: 'var(--radius-xl)',
-          background: 'var(--color-surface-container-highest)',
-          fontSize: '0.8rem',
-          color: 'var(--color-on-surface-variant)',
-          lineHeight: 1.5,
-        }}
-      >
-        <div style={{ fontWeight: 700, color: 'var(--color-primary)', marginBottom: '0.25rem' }}>Upgrade to Pro</div>
-        <div>Unlock unlimited documents and advanced analytics.</div>
-      </div>
+      {/* Upgrade card — hidden when collapsed */}
+      {!collapsed && (
+        <div
+          style={{
+            padding: '1rem',
+            borderRadius: 'var(--radius-xl)',
+            background: 'var(--color-surface-container-highest)',
+            fontSize: '0.8rem',
+            color: 'var(--color-on-surface-variant)',
+            lineHeight: 1.5,
+          }}
+        >
+          <div style={{ fontWeight: 700, color: 'var(--color-primary)', marginBottom: '0.25rem' }}>Upgrade to Pro</div>
+          <div>Unlock unlimited documents and advanced analytics.</div>
+        </div>
+      )}
+
+      {/* Collapse toggle */}
+      {onToggleCollapse && (
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: '0.5rem',
+            padding: '0.5rem',
+            borderRadius: 'var(--radius-lg)',
+            border: 'none',
+            cursor: 'pointer',
+            background: 'transparent',
+            color: 'var(--color-on-surface-variant)',
+            width: '100%',
+            transition: 'background var(--duration-fast)',
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-surface-container-highest)'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>
+            {collapsed ? 'chevron_right' : 'chevron_left'}
+          </span>
+        </button>
+      )}
     </aside>
   );
 }

@@ -66,7 +66,9 @@ export function findReferencesHeadingIndex(sections: Section[]): number {
       return false;
     }
 
-    return REFERENCE_HEADING_TEXTS.has(normalizeText(getSectionText(section)));
+    // Strip subtitles after colon, dash, or opening paren before matching
+    const baseText = normalizeText(getSectionText(section)).split(/[:(–\-]/)[0].trim();
+    return REFERENCE_HEADING_TEXTS.has(baseText);
   });
 }
 

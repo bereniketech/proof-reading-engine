@@ -1364,6 +1364,11 @@ p {
 
   .main-content {
     margin-left: 16rem !important;
+    transition: margin-left var(--duration-fast);
+  }
+
+  .main-content.sidebar-collapsed {
+    margin-left: 4.5rem !important;
   }
 
   .main-content > main {

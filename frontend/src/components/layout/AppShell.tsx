@@ -23,6 +23,7 @@ function storeLastVisitedPath(pathname: string): void {
 
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -33,7 +34,10 @@ export function AppShell() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--color-surface)' }}>
       <div className="desktop-sidebar">
-        <Sidebar />
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+        />
       </div>
 
       {sidebarOpen ? (
@@ -59,7 +63,7 @@ export function AppShell() {
         </div>
       ) : null}
 
-      <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: 0 }}>
+      <div className={`main-content${sidebarCollapsed ? ' sidebar-collapsed' : ''}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', marginLeft: 0 }}>
         <TopNav onMenuToggle={() => setSidebarOpen((current) => !current)} />
         <main
           style={{
