@@ -55,15 +55,28 @@ function splitIntoBlocks(rawText: string): string[] {
     `^(${escaped.join('|')})(\\s+\\S.*)$`,
     'i',
   );
+  // Split any block that ends with a known label glued to the previous content
+  // after whitespace normalization collapses line breaks into spaces
+  // (e.g. "...Questionnaire Study Abstract" → ["...Questionnaire Study", "Abstract"])
+  const labelEndRe = new RegExp(
+    `^(.+?)\\s+(${escaped.join('|')})$`,
+    'i',
+  );
   const finalBlocks: string[] = [];
   for (const block of rawBlocks) {
-    const m = labelStartRe.exec(block);
-    if (m) {
-      finalBlocks.push(m[1].trim());
-      finalBlocks.push(m[2].trim());
-    } else {
-      finalBlocks.push(block);
+    const mStart = labelStartRe.exec(block);
+    if (mStart && mStart[1] && mStart[2]) {
+      finalBlocks.push(mStart[1].trim());
+      finalBlocks.push(mStart[2].trim());
+      continue;
     }
+    const mEnd = labelEndRe.exec(block);
+    if (mEnd && mEnd[1] && mEnd[2]) {
+      finalBlocks.push(mEnd[1].trim());
+      finalBlocks.push(mEnd[2].trim());
+      continue;
+    }
+    finalBlocks.push(block);
   }
   return finalBlocks;
 }
