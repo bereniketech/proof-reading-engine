@@ -96,7 +96,6 @@ interface AiBadgeProps {
 
 function AiBadge({ score }: AiBadgeProps) {
   const band = getAiBand(score);
-  const label = band === 'null' ? 'Not scored' : band === 'human' ? 'Likely Human' : band === 'mixed' ? 'Mixed' : 'Likely AI';
   const modifier = band === 'null' ? 'grey' : band === 'human' ? 'green' : band === 'mixed' ? 'yellow' : 'red';
   return (
     <span className={`ai-score-badge ai-score-badge--${modifier}`} title={score !== null ? `${score}% AI-generated content detected` : 'AI detection not yet run'}>

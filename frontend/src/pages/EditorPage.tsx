@@ -1,9 +1,8 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import ReviewPage from '../ReviewPage';
 
 export function EditorPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const navigate = useNavigate();
 
   if (!sessionId) {
     return (

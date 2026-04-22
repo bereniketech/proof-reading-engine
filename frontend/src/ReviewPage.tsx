@@ -307,7 +307,6 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
-  const [analysisOpen, setAnalysisOpen] = useState(false);
 
   const firstSectionSetRef = useRef(false);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
