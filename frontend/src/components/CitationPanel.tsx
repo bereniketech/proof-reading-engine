@@ -53,8 +53,15 @@ export function CitationPanel({ sessionId, authToken, apiBaseUrl, onScrollToSect
 
   return (
     <div className="citation-panel">
-      <button className="citation-btn" onClick={() => { void handleDetect(); }} disabled={loading} aria-busy={loading}>
-        {loading ? 'Scanning…' : 'Detect Unsupported Claims'}
+      <button
+        type="button"
+        className="citation-btn toolbar-btn"
+        onClick={() => { void handleDetect(); }}
+        disabled={loading}
+        aria-busy={loading}
+        title="Scan for statistical, causal, and factual claims that lack citations — highlights sections that need references added"
+      >
+        {loading ? 'Scanning…' : 'Unsupported Claims'}
       </button>
 
       {error && <p className="citation-error" role="alert">{error}</p>}

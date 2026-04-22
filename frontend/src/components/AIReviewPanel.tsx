@@ -43,12 +43,13 @@ export function AIReviewPanel({ sessionId, authToken, apiBaseUrl }: AIReviewPane
     <div className="ai-review-panel">
       <button
         type="button"
-        className="ai-review-btn"
+        className="ai-review-btn toolbar-btn"
         onClick={() => { void handleRun(); }}
         disabled={loading}
         aria-busy={loading}
+        title="Run a full AI-powered review of the document — scores quality, highlights strengths, weaknesses, and gives recommendations"
       >
-        {loading ? 'Analyzing…' : 'Run AI Review'}
+        {loading ? 'Analyzing…' : 'AI Review'}
       </button>
 
       {error && (

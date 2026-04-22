@@ -97,9 +97,20 @@ interface AiBadgeProps {
 function AiBadge({ score }: AiBadgeProps) {
   const band = getAiBand(score);
   const modifier = band === 'null' ? 'grey' : band === 'human' ? 'green' : band === 'mixed' ? 'yellow' : 'red';
+  const bandLabel = band === 'human' ? 'Likely Human' : band === 'mixed' ? 'Mixed' : band === 'ai' ? 'Likely AI' : null;
+  const titleText =
+    score !== null
+      ? `AI Score: ${score}% — ${bandLabel ?? ''} (0–30% likely human, 31–60% mixed, 61–100% likely AI)`
+      : 'AI detection has not run yet for this section';
   return (
-    <span className={`ai-score-badge ai-score-badge--${modifier}`} title={score !== null ? `${score}% AI-generated content detected` : 'AI detection not yet run'}>
-      {score !== null ? `${score}% AI Detected` : 'AI Detection Pending'}
+    <span className={`ai-score-badge ai-score-badge--${modifier}`} title={titleText}>
+      <span className="meta-badge-label">AI Score</span>
+      <span className="meta-badge-value">
+        {score !== null ? `${score}%` : '—'}
+      </span>
+      {bandLabel !== null && (
+        <span className="meta-badge-band">{bandLabel}</span>
+      )}
     </span>
   );
 }
@@ -270,10 +281,11 @@ export function SectionCard({
         {fkGradeLevel !== null && (
           <span
             className="fk-badge"
-            title={`Flesch-Kincaid readability grade ${fkGradeLevel} — higher = harder to read`}
-            aria-label={`Reading level grade ${fkGradeLevel}`}
+            title={`Flesch-Kincaid readability score: Grade ${fkGradeLevel}. Higher grade = harder to read. Grade 8–10 is typical for general audiences.`}
+            aria-label={`Readability: Grade ${fkGradeLevel}`}
           >
-            Reading Level {fkGradeLevel}
+            <span className="meta-badge-label">Readability</span>
+            <span className="meta-badge-value">Grade {fkGradeLevel}</span>
           </span>
         )}
         <AiBadge score={section.ai_score} />

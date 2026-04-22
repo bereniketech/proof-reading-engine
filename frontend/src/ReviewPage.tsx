@@ -307,6 +307,8 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
+  const [downloadMenuOpen, setDownloadMenuOpen] = useState(false);
+  const downloadMenuRef = useRef<HTMLDivElement>(null);
 
   const firstSectionSetRef = useRef(false);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -455,6 +457,17 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
     setSplitSectionText('');
     setSplitSectionError(null);
   }, [activeSectionId]);
+
+  useEffect(() => {
+    if (!downloadMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (downloadMenuRef.current && !downloadMenuRef.current.contains(e.target as Node)) {
+        setDownloadMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [downloadMenuOpen]);
 
   const patchSection = async (
     sectionId: string,
@@ -1145,103 +1158,75 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   return (
     <div className="review-shell">
       <header className="review-header">
-        <div className="review-header-left">
-          <span className="review-eyebrow">Proof-Reading Engine</span>
-          <h1 className="review-title">{payload.session.filename}</h1>
-        </div>
-        <div className="review-header-right">
-          {isProofreading ? (
-            <span className="review-status-pill review-status-pill--active" aria-live="polite">
-              Proofreading&hellip; {pendingCount} section{pendingCount !== 1 ? 's' : ''} remaining
-            </span>
-          ) : (
-            <span className="review-status-pill review-status-pill--done">All sections ready</span>
-          )}
-          {referenceData.options.length > 0 ? (
-            <label className="reference-style-picker" htmlFor="reference-style-select">
-              <span>Reference style</span>
-              <select
-                id="reference-style-select"
-                className="field-select"
-                value={referenceStyle}
-                onChange={(event) => setReferenceStyle(event.target.value as ReferenceStyle)}
-              >
-                {REFERENCE_STYLES.map((styleOption) => (
-                  <option key={styleOption.value} value={styleOption.value}>
-                    {styleOption.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          {referenceData.options.length > 0 && !isProofreading ? (
+        {/* Row 1: document identity + nav/utility actions */}
+        <div className="review-header-top">
+          <div className="review-header-left">
+            <span className="review-eyebrow">Proof-Reading Engine</span>
+            <h1 className="review-title">{payload.session.filename}</h1>
+          </div>
+          <div className="review-header-top-actions">
             <button
               type="button"
-              className="secondary-button"
-              disabled={isMatchingReferences}
-              onClick={() => {
-                void handleAutoMatchReferences();
-              }}
+              className="review-back-btn"
+              onClick={() => window.location.assign('/')}
+              title="Return to the dashboard"
+              aria-label="Back to dashboard"
             >
-              {isMatchingReferences ? (
-                <>
-                  <span className="button-spinner" aria-hidden="true" />
-                  Matching references...
-                </>
-              ) : (
-                'Auto-match References'
-              )}
+              ←
             </button>
-          ) : null}
-          <button
-            type="button"
-            className="primary-button review-export-button"
-            disabled={!canExportPdf || isExporting}
-            onClick={() => {
-              void handleExportPdf();
-            }}
-          >
-            {isExporting ? (
-              <>
-                <span className="button-spinner" aria-hidden="true" />
-                Exporting PDF...
-              </>
+          </div>
+        </div>
+        {/* Row 2: status + export actions */}
+        <div className="review-header-bottom">
+          <div className="review-header-bottom-left">
+            {isProofreading ? (
+              <span className="review-status-pill review-status-pill--active" aria-live="polite">
+                Proofreading&hellip; {pendingCount} section{pendingCount !== 1 ? 's' : ''} remaining
+              </span>
             ) : (
-              'Download PDF'
+              <span className="review-status-pill review-status-pill--done">All sections ready</span>
             )}
-          </button>
-          <button
-            type="button"
-            className="export-tracked-btn"
-            disabled={!canExportPdf || isExportingTracked}
-            onClick={() => {
-              void handleExportTrackedChanges();
-            }}
-          >
-            {isExportingTracked ? (
-              <>
-                <span className="button-spinner" aria-hidden="true" />
-                Exporting...
-              </>
-            ) : (
-              'Export with Track Changes'
-            )}
-          </button>
-          <button
-            type="button"
-            className={`chat-toggle-btn${chatOpen ? ' chat-toggle-btn--active' : ''}`}
-            onClick={() => setChatOpen((o) => !o)}
-            aria-pressed={chatOpen}
-          >
-            {chatOpen ? 'Close Chat' : 'Ask AI'}
-          </button>
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => window.location.assign('/')}
-          >
-            ← Back
-          </button>
+          </div>
+          <div className="review-header-right">
+            <div className="download-dropdown" ref={downloadMenuRef}>
+              <button
+                type="button"
+                className="primary-button download-dropdown-trigger"
+                disabled={!canExportPdf || isExporting || isExportingTracked}
+                onClick={() => setDownloadMenuOpen((o) => !o)}
+                aria-haspopup="true"
+                aria-expanded={downloadMenuOpen}
+              >
+                {isExporting || isExportingTracked ? (
+                  <><span className="button-spinner" aria-hidden="true" /> Saving...</>
+                ) : (
+                  <>Download ▾</>
+                )}
+              </button>
+              {downloadMenuOpen && (
+                <div className="download-dropdown-menu" role="menu">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="download-dropdown-item"
+                    onClick={() => { setDownloadMenuOpen(false); void handleExportPdf(); }}
+                  >
+                    <span className="download-dropdown-format">.pdf</span>
+                    <span className="download-dropdown-desc">Final clean document</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="download-dropdown-item"
+                    onClick={() => { setDownloadMenuOpen(false); void handleExportTrackedChanges(); }}
+                  >
+                    <span className="download-dropdown-format">.docx</span>
+                    <span className="download-dropdown-desc">With tracked changes</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
@@ -1295,6 +1280,51 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
               el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}
           />
+          {referenceData.options.length > 0 ? (
+            <>
+              <div className="analysis-toolbar-divider" aria-hidden="true" />
+              <label className="reference-style-picker" htmlFor="reference-style-select" title="Citation format applied when auto-matching references">
+                <span>Style</span>
+                <select
+                  id="reference-style-select"
+                  className="field-select"
+                  value={referenceStyle}
+                  onChange={(event) => setReferenceStyle(event.target.value as ReferenceStyle)}
+                >
+                  {REFERENCE_STYLES.map((styleOption) => (
+                    <option key={styleOption.value} value={styleOption.value}>
+                      {styleOption.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {!isProofreading ? (
+                <button
+                  type="button"
+                  className="toolbar-btn toolbar-btn--references"
+                  disabled={isMatchingReferences}
+                  title="Automatically link in-text citations to their matching entries in the References list"
+                  onClick={() => { void handleAutoMatchReferences(); }}
+                >
+                  {isMatchingReferences ? (
+                    <><span className="button-spinner" aria-hidden="true" /> Matching...</>
+                  ) : (
+                    'Auto-match References'
+                  )}
+                </button>
+              ) : null}
+            </>
+          ) : null}
+          <div className="analysis-toolbar-divider" aria-hidden="true" />
+          <button
+            type="button"
+            className={`chat-toggle-btn toolbar-btn${chatOpen ? ' chat-toggle-btn--active' : ''}`}
+            onClick={() => setChatOpen((o) => !o)}
+            aria-pressed={chatOpen}
+            title="Open the AI chat assistant to ask questions, request rewrites, or get explanations about this document"
+          >
+            {chatOpen ? 'Close Chat' : 'Ask AI'}
+          </button>
         </div>
       ) : null}
 

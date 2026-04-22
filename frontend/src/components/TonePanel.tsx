@@ -60,12 +60,14 @@ export function TonePanel({ sessionId, authToken }: TonePanelProps) {
   return (
     <div className="tone-panel">
       <button
-        className="tone-btn"
+        type="button"
+        className="tone-btn toolbar-btn"
         onClick={() => { void handleCheck(); }}
         disabled={loading}
         aria-busy={loading}
+        title="Check whether all sections share a consistent tone and writing style — flags outlier sections that shift voice"
       >
-        {loading ? 'Checking tone…' : 'Check Tone Consistency'}
+        {loading ? 'Checking tone…' : 'Tone Consistency'}
       </button>
 
       {error ? <p className="tone-error" role="alert">{error}</p> : null}

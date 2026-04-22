@@ -42,12 +42,14 @@ export function CompletenessPanel({ sessionId, authToken, onAddSection }: Comple
   return (
     <div className="completeness-panel">
       <button
-        className="completeness-btn"
+        type="button"
+        className="completeness-btn toolbar-btn"
         onClick={() => { void handleCheck(); }}
         disabled={loading}
         aria-busy={loading}
+        title="Detect missing required sections for this document type — shows what's present and what's absent"
       >
-        {loading ? 'Checking…' : 'Check Completeness'}
+        {loading ? 'Checking…' : 'Completeness'}
       </button>
 
       {error && (
