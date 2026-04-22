@@ -90,7 +90,7 @@ export function ChatDrawer({ sessionId, authToken, open, onClose }: ChatDrawerPr
       if (!reader) throw new Error('No response stream');
 
       let accumulated = '';
-      let assistantMsgId = crypto.randomUUID();
+      let assistantMsgId: string = crypto.randomUUID();
 
       while (true) {
         const { done, value } = await reader.read();

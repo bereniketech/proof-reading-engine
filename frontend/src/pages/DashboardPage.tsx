@@ -284,7 +284,8 @@ export function DashboardPage(){
                       className="compare-btn"
                       onClick={() => {
                         setDiffBaseId(s.id);
-                        setCompareTarget(sessions[index + 1].id);
+                        const next = sessions[index + 1];
+                        if (next) setCompareTarget(next.id);
                       }}
                     >
                       Compare with previous
