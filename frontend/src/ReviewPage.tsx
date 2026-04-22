@@ -42,6 +42,8 @@ interface SectionRecord {
   reference_text: string | null;
   final_text: string | null;
   change_summary: string | null;
+  ai_score: number | null;
+  humanized_text: string | null;
   status: SectionStatus;
   created_at: string;
   updated_at: string;
@@ -102,6 +104,12 @@ interface SplitSectionSuccessResponse {
   };
 }
 
+interface HumanizeSuccessResponse {
+  success: true;
+  data: SectionRecord;
+}
+
+type HumanizeResponse = HumanizeSuccessResponse | ApiErrorResponse;
 type MergeSectionsResponse = MergeSectionsSuccessResponse | ApiErrorResponse;
 type AddSectionResponse = AddSectionSuccessResponse | ApiErrorResponse;
 type SplitSectionResponse = SplitSectionSuccessResponse | ApiErrorResponse;
@@ -288,6 +296,8 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   const [splitSectionHeadingLevel, setSplitSectionHeadingLevel] = useState(2);
   const [splitSectionText, setSplitSectionText] = useState('');
   const [splitSectionError, setSplitSectionError] = useState<string | null>(null);
+  const [humanizingSectionId, setHumanizingSectionId] = useState<string | null>(null);
+  const [humanizeErrorBySectionId, setHumanizeErrorBySectionId] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -459,17 +469,6 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
     }
 
     return (body as SectionPatchSuccessResponse).data;
-  };
-
-  const suggestReferencesForSection = async (sectionId: string): Promise<number[]> => {
-    if (!supabaseSession) throw new Error('You are not authenticated.');
-    const response = await fetch(`${apiBaseUrl}/api/sections/${encodeURIComponent(sectionId)}/suggest-references`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${supabaseSession.access_token}` },
-    });
-    const body = await response.json() as { success?: boolean; data?: { suggested_positions: number[] }; error?: string };
-    if (!response.ok || !body.success) throw new Error(body.error ?? 'AI suggestion failed.');
-    return body.data?.suggested_positions ?? [];
   };
 
   const getEditedText = (section: SectionRecord): string => {
@@ -835,6 +834,56 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
     }
   };
 
+  const handleHumanize = async (sectionId: string): Promise<void> => {
+    if (!supabaseSession) return;
+
+    setHumanizeErrorBySectionId((current) => {
+      const next = { ...current };
+      delete next[sectionId];
+      return next;
+    });
+    setHumanizingSectionId(sectionId);
+
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/api/sections/${encodeURIComponent(sectionId)}/humanize`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${supabaseSession.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      const body = (await response.json()) as HumanizeResponse;
+      if (!response.ok || !body.success) {
+        throw new Error((body as ApiErrorResponse).error ?? 'Humanization failed.');
+      }
+
+      const updated = (body as HumanizeSuccessResponse).data;
+      updateSectionInPayload(updated);
+    } catch (err) {
+      setHumanizeErrorBySectionId((current) => ({
+        ...current,
+        [sectionId]: err instanceof Error ? err.message : 'Humanization failed. Please try again.',
+      }));
+    } finally {
+      setHumanizingSectionId(null);
+    }
+  };
+
+  const handleUseHumanizedVersion = (sectionId: string, humanizedText: string): void => {
+    setEditedTextBySectionId((current) => ({
+      ...current,
+      [sectionId]: humanizedText,
+    }));
+    setDirtySectionIds((current) => ({
+      ...current,
+      [sectionId]: true,
+    }));
+  };
+
   const handleExportPdf = async (): Promise<void> => {
     if (!supabaseSession) {
       setExportError('You are not authenticated.');
@@ -912,6 +961,7 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
             Authorization: `Bearer ${supabaseSession.access_token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ reference_style: referenceStyle }),
         },
       );
 
@@ -925,6 +975,8 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
       setPayload((current) => (current ? { ...current, sections: data.sections } : current));
       setDirtySectionIds({});
       setMatchReferencesSummary(data.summary);
+      // Re-set active section so activeSectionLinkedPositions re-derives from the new payload
+      setActiveSectionId((current) => current);
     } catch (err) {
       setMatchReferencesError(
         err instanceof Error ? err.message : 'Auto-match failed. Please retry.',
@@ -1237,7 +1289,6 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
                 setInstructionError(null);
               }}
               onApplyInstruction={handleApplyInstruction}
-              onSuggestReferences={() => suggestReferencesForSection(activeSection.id)}
               onLinkedReferencePositionsChange={handleLinkedReferencesChange}
               onAccept={handleAccept}
               onReject={handleReject}
@@ -1250,6 +1301,10 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
               onSplitSectionTypeChange={setSplitSectionType}
               onSplitSectionHeadingLevelChange={setSplitSectionHeadingLevel}
               onSplitSection={handleSplitSection}
+              isHumanizing={humanizingSectionId === activeSection.id}
+              humanizeError={humanizeErrorBySectionId[activeSection.id] ?? null}
+              onHumanize={() => handleHumanize(activeSection.id)}
+              onUseHumanizedVersion={(text) => handleUseHumanizedVersion(activeSection.id, text)}
             />
           ) : (
             <div className="section-empty">

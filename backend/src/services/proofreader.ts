@@ -4,6 +4,7 @@ import {
   type ProofreadResult as LanguageToolProofreadResult,
 } from './languagetool.js';
 import { proofreadSectionWithOpenAI, type ProofreadResult as OpenAIProofreadResult } from './openai.js';
+import { scoreSection } from './ai-scorer.js';
 
 const DEFAULT_MAX_CONCURRENCY = 5;
 
@@ -24,6 +25,7 @@ type ProofreadResult = OpenAIProofreadResult | LanguageToolProofreadResult;
 interface ProofreaderRepository {
   getPendingSections: (sessionId: string) => Promise<SessionSectionRecord[]>;
   saveSectionProofreadResult: (sessionId: string, sectionId: string, result: ProofreadResult) => Promise<void>;
+  updateSectionAiScore: (sessionId: string, sectionId: string, aiScore: number) => Promise<void>;
   updateSessionStatus: (sessionId: string, status: SessionStatus) => Promise<void>;
 }
 
@@ -128,6 +130,18 @@ function createSupabaseProofreaderRepository(accessToken: string): ProofreaderRe
       }
     },
 
+    updateSectionAiScore: async (sessionId: string, sectionId: string, aiScore: number): Promise<void> => {
+      const { error } = await supabase
+        .from('sections')
+        .update({ ai_score: aiScore })
+        .eq('id', sectionId)
+        .eq('session_id', sessionId);
+
+      if (error) {
+        throw new Error(`Failed to update ai_score for section ${sectionId}: ${error.message}`);
+      }
+    },
+
     updateSessionStatus: async (sessionId: string, status: SessionStatus): Promise<void> => {
       const { error } = await supabase
         .from('sessions')
@@ -160,14 +174,36 @@ function createDefaultDependencies(accessToken: string, documentType?: string): 
   };
 }
 
+async function scoreSectionAfterProofread(
+  sessionId: string,
+  sectionId: string,
+  correctedText: string,
+  repository: ProofreaderRepository,
+): Promise<void> {
+  try {
+    const aiScore = await scoreSection(correctedText);
+    await repository.updateSectionAiScore(sessionId, sectionId, aiScore);
+  } catch (scoreError: unknown) {
+    console.warn('AI scoring failed for section; score will remain null', {
+      sessionId,
+      sectionId,
+      error: getErrorMessage(scoreError),
+    });
+  }
+}
+
 async function proofreadSingleSection(
   sessionId: string,
   section: SessionSectionRecord,
   dependencies: ProofreaderDependencies,
 ): Promise<void> {
+  let correctedText = section.original_text;
+
   try {
     const openAIResult = await dependencies.proofreadWithOpenAI(section);
     await dependencies.repository.saveSectionProofreadResult(sessionId, section.id, openAIResult);
+    correctedText = openAIResult.corrected_text;
+    await scoreSectionAfterProofread(sessionId, section.id, correctedText, dependencies.repository);
     return;
   } catch (openAIError: unknown) {
     console.warn('OpenAI proofreading failed for section, attempting LanguageTool fallback', {
@@ -180,6 +216,8 @@ async function proofreadSingleSection(
   try {
     const fallbackResult = await dependencies.proofreadWithLanguageTool(section);
     await dependencies.repository.saveSectionProofreadResult(sessionId, section.id, fallbackResult);
+    correctedText = fallbackResult.corrected_text;
+    await scoreSectionAfterProofread(sessionId, section.id, correctedText, dependencies.repository);
   } catch (fallbackError: unknown) {
     console.error('LanguageTool fallback failed for section, persisting original text', {
       sessionId,
@@ -191,6 +229,7 @@ async function proofreadSingleSection(
       corrected_text: section.original_text,
       change_summary: 'Proofreading services unavailable; original text retained.',
     });
+    await scoreSectionAfterProofread(sessionId, section.id, section.original_text, dependencies.repository);
   }
 }
 

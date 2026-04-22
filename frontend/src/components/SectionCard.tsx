@@ -12,6 +12,8 @@ export interface SectionCardSection {
   corrected_text: string | null;
   reference_text: string | null;
   change_summary: string | null;
+  ai_score: number | null;
+  humanized_text: string | null;
   status: SectionStatus;
 }
 
@@ -53,10 +55,11 @@ interface SectionCardProps {
   readonly splitSectionHeadingLevel: number;
   readonly isSplittingSection: boolean;
   readonly splitSectionError: string | null;
+  readonly isHumanizing: boolean;
+  readonly humanizeError: string | null;
   readonly onEditedTextChange: (nextValue: string) => void;
   readonly onInstructionTextChange: (value: string) => void;
   readonly onApplyInstruction: () => Promise<void>;
-  readonly onSuggestReferences: () => Promise<number[]>;
   readonly onLinkedReferencePositionsChange: (positions: number[]) => Promise<void>;
   readonly onAccept: () => Promise<void>;
   readonly onReject: () => Promise<void>;
@@ -69,6 +72,32 @@ interface SectionCardProps {
   readonly onSplitSectionTypeChange: (value: SectionType) => void;
   readonly onSplitSectionHeadingLevelChange: (value: number) => void;
   readonly onSplitSection: () => Promise<void>;
+  readonly onHumanize: () => void;
+  readonly onUseHumanizedVersion: (text: string) => void;
+}
+
+type AiBand = 'null' | 'human' | 'mixed' | 'ai';
+
+function getAiBand(score: number | null): AiBand {
+  if (score === null) return 'null';
+  if (score <= 30) return 'human';
+  if (score <= 60) return 'mixed';
+  return 'ai';
+}
+
+interface AiBadgeProps {
+  readonly score: number | null;
+}
+
+function AiBadge({ score }: AiBadgeProps) {
+  const band = getAiBand(score);
+  const label = band === 'null' ? '--' : band === 'human' ? 'Likely Human' : band === 'mixed' ? 'Mixed' : 'Likely AI';
+  const modifier = band === 'null' ? 'grey' : band === 'human' ? 'green' : band === 'mixed' ? 'yellow' : 'red';
+  return (
+    <span className={`ai-score-badge ai-score-badge--${modifier}`} title={score !== null ? `AI score: ${score}` : 'Not yet scored'}>
+      {score !== null ? `${score} — ` : ''}{label}
+    </span>
+  );
 }
 
 function tokenizeByWhitespace(text: string): string[] {
@@ -188,10 +217,11 @@ export function SectionCard({
   splitSectionHeadingLevel,
   isSplittingSection,
   splitSectionError,
+  isHumanizing,
+  humanizeError,
   onEditedTextChange,
   onInstructionTextChange,
   onApplyInstruction,
-  onSuggestReferences,
   onLinkedReferencePositionsChange,
   onAccept,
   onReject,
@@ -204,8 +234,10 @@ export function SectionCard({
   onSplitSectionTypeChange,
   onSplitSectionHeadingLevelChange,
   onSplitSection,
+  onHumanize,
+  onUseHumanizedVersion,
 }: SectionCardProps) {
-  const [activeTab, setActiveTab] = useState<'corrected' | 'diff' | 'summary'>('corrected');
+  const [activeTab, setActiveTab] = useState<'corrected' | 'diff' | 'summary' | 'humanized'>('corrected');
   const textareaId = `corrected-text-${section.id}`;
   const instructionId = `instruction-${section.id}`;
   const addSectionTextareaId = `add-section-${section.id}`;
@@ -216,21 +248,12 @@ export function SectionCard({
   );
 
   const hasSummary = section.change_summary !== null && section.change_summary.length > 0;
+  const hasHumanized = section.humanized_text !== null;
   const isPending = section.status === 'pending' && section.corrected_text === null;
+  const showHumanizeButton = section.ai_score !== null && section.ai_score >= 61 && !hasHumanized;
   const linkedPositionSet = useMemo(
     () => new Set(linkedReferencePositions),
     [linkedReferencePositions],
-  );
-
-  // AI-powered citation suggestions for this section
-  const [aiSuggestedPositions, setAiSuggestedPositions] = useState<Set<number>>(new Set());
-  const [isSuggestingRefs, setIsSuggestingRefs] = useState(false);
-  const [suggestError, setSuggestError] = useState<string | null>(null);
-  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<number>>(new Set());
-
-  const visibleSuggestions = useMemo(
-    () => new Set([...aiSuggestedPositions].filter((p) => !dismissedSuggestions.has(p) && !linkedPositionSet.has(p))),
-    [aiSuggestedPositions, dismissedSuggestions, linkedPositionSet],
   );
 
   return (
@@ -238,6 +261,7 @@ export function SectionCard({
       <div className="section-detail-meta">
         <span className="section-detail-pos">Section #{section.position + 1}</span>
         <span className="section-detail-type">{section.section_type}</span>
+        <AiBadge score={section.ai_score} />
       </div>
 
       <div className="section-block">
@@ -276,7 +300,43 @@ export function SectionCard({
               Summary
             </button>
           ) : null}
+          {hasHumanized ? (
+            <button
+              role="tab"
+              type="button"
+              aria-selected={activeTab === 'humanized'}
+              className={`section-tab${activeTab === 'humanized' ? ' section-tab--active' : ''}`}
+              onClick={() => setActiveTab('humanized')}
+            >
+              Humanized
+            </button>
+          ) : null}
         </div>
+
+        {showHumanizeButton ? (
+          <div className="humanize-row">
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={isPending || isHumanizing}
+              onClick={() => onHumanize()}
+            >
+              {isHumanizing ? (
+                <>
+                  <span className="button-spinner" aria-hidden="true" />
+                  Humanizing…
+                </>
+              ) : (
+                'Humanize'
+              )}
+            </button>
+            {humanizeError ? (
+              <p className="review-status-message review-status-message--error" role="alert">
+                {humanizeError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {activeTab === 'corrected' ? (
           <textarea
@@ -310,6 +370,17 @@ export function SectionCard({
             ) : (
               <p className="section-block-content section-block-content--summary">No text changes yet.</p>
             )}
+          </div>
+        ) : activeTab === 'humanized' && section.humanized_text !== null ? (
+          <div role="tabpanel" className="section-humanized">
+            <p className="section-block-content">{section.humanized_text}</p>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => onUseHumanizedVersion(section.humanized_text as string)}
+            >
+              Use this version
+            </button>
           </div>
         ) : (
           <div role="tabpanel">
@@ -362,104 +433,18 @@ export function SectionCard({
 
       {referenceOptions.length > 0 && canLinkReferences ? (
         <div className="section-block">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <h2 className="section-block-label" style={{ margin: 0 }}>Citations used in this section</h2>
-            <button
-              type="button"
-              disabled={isSuggestingRefs || isPending}
-              onClick={() => {
-                setIsSuggestingRefs(true);
-                setSuggestError(null);
-                setDismissedSuggestions(new Set());
-                onSuggestReferences().then((positions) => {
-                  setAiSuggestedPositions(new Set(positions));
-                  setIsSuggestingRefs(false);
-                }).catch((err: unknown) => {
-                  setSuggestError(err instanceof Error ? err.message : 'AI suggestion failed.');
-                  setIsSuggestingRefs(false);
-                });
-              }}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.35rem',
-                padding: '0.3rem 0.7rem', borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-outline-variant)',
-                background: 'transparent', cursor: isSuggestingRefs ? 'wait' : 'pointer',
-                fontSize: '0.78rem', color: 'var(--color-primary)', fontWeight: 600,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '0.95rem' }}>auto_awesome</span>
-              {isSuggestingRefs ? 'Analysing…' : 'Suggest with AI'}
-            </button>
-          </div>
+          <h2 className="section-block-label">Citations used in this section</h2>
           <p className="section-block-content section-block-content--summary">
             Tick each reference entry cited here. The exported PDF will append citation markers for the selected references automatically.
           </p>
-          {suggestError ? (
-            <p className="review-status-message review-status-message--error" role="alert" style={{ marginBottom: '0.5rem' }}>{suggestError}</p>
-          ) : null}
-          {visibleSuggestions.size > 0 ? (
-            <div style={{
-              marginBottom: '0.75rem', padding: '0.6rem 0.75rem',
-              borderRadius: 'var(--radius-lg)', background: 'rgba(var(--color-primary-rgb, 58,56,139), 0.06)',
-              border: '1px solid var(--color-outline-variant)',
-            }}>
-              <p style={{ margin: '0 0 0.4rem', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-primary)' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '0.9rem', verticalAlign: 'middle', marginRight: '0.25rem' }}>tips_and_updates</span>
-                AI found {visibleSuggestions.size} likely citation{visibleSuggestions.size === 1 ? '' : 's'} — confirm below
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                {[...visibleSuggestions].map((pos) => {
-                  const ref = referenceOptions.find((r) => r.position === pos);
-                  if (!ref) return null;
-                  return (
-                    <div key={pos} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextSet = new Set(linkedPositionSet);
-                          nextSet.add(pos);
-                          void onLinkedReferencePositionsChange(Array.from(nextSet.values()).sort((a, b) => a - b));
-                          setAiSuggestedPositions((prev) => { const s = new Set(prev); s.delete(pos); return s; });
-                        }}
-                        style={{
-                          padding: '0.2rem 0.55rem', borderRadius: 'var(--radius-full)',
-                          border: '1px solid var(--color-primary)', background: 'var(--color-primary)',
-                          color: '#fff', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600,
-                        }}
-                      >
-                        ✓ Ref {pos + 1}
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Dismiss suggestion"
-                        onClick={() => setDismissedSuggestions((prev) => new Set([...prev, pos]))}
-                        style={{
-                          padding: '0.15rem 0.4rem', borderRadius: 'var(--radius-full)',
-                          border: '1px solid var(--color-outline-variant)', background: 'transparent',
-                          color: 'var(--color-on-surface-variant)', fontSize: '0.7rem', cursor: 'pointer',
-                        }}
-                      >✕</button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
           <p className="section-reference-selected-count">
             {linkedReferencePositions.length} reference{linkedReferencePositions.length === 1 ? '' : 's'} selected
           </p>
           <div className="reference-link-list" role="group" aria-label="Reference links">
             {referenceOptions.map((referenceOption) => {
               const checked = linkedPositionSet.has(referenceOption.position);
-              const isSuggested = visibleSuggestions.has(referenceOption.position);
-
               return (
-                <label
-                  key={referenceOption.position}
-                  className="reference-link-item"
-                  style={isSuggested ? { background: 'rgba(var(--color-primary-rgb, 58,56,139), 0.06)', borderRadius: 'var(--radius-md)' } : undefined}
-                >
+                <label key={referenceOption.position} className="reference-link-item">
                   <input
                     type="checkbox"
                     checked={checked}
@@ -468,7 +453,6 @@ export function SectionCard({
                       const nextSet = new Set(linkedPositionSet);
                       if (event.target.checked) {
                         nextSet.add(referenceOption.position);
-                        setAiSuggestedPositions((prev) => { const s = new Set(prev); s.delete(referenceOption.position); return s; });
                       } else {
                         nextSet.delete(referenceOption.position);
                       }
@@ -476,7 +460,6 @@ export function SectionCard({
                     }}
                   />
                   <span className="reference-link-number">Ref {referenceOption.position + 1}</span>
-                  {isSuggested ? <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-primary)', marginLeft: '0.25rem', letterSpacing: '0.03rem' }}>AI</span> : null}
                   <span className="reference-link-text">{referenceOption.text}</span>
                 </label>
               );

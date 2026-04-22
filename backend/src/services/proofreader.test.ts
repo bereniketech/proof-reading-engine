@@ -50,6 +50,7 @@ describe('runProofreadingOrchestrator', () => {
                 changeSummary: result.change_summary,
               });
             },
+            updateSectionAiScore: async () => { return; },
             updateSessionStatus: async (_sessionId, status) => {
               updatedSessionStatus = status;
             },
@@ -85,12 +86,9 @@ describe('runProofreadingOrchestrator', () => {
         dependencies: {
           repository: {
             getPendingSections: async () => sections,
-            saveSectionProofreadResult: async () => {
-              return;
-            },
-            updateSessionStatus: async () => {
-              return;
-            },
+            saveSectionProofreadResult: async () => { return; },
+            updateSectionAiScore: async () => { return; },
+            updateSessionStatus: async () => { return; },
           },
           proofreadWithOpenAI: async () => {
             activeCount += 1;
@@ -134,9 +132,8 @@ describe('runProofreadingOrchestrator', () => {
             saveSectionProofreadResult: async (_sessionId, sectionId, result) => {
               savedResultsBySection.set(sectionId, result.change_summary);
             },
-            updateSessionStatus: async () => {
-              return;
-            },
+            updateSectionAiScore: async () => { return; },
+            updateSessionStatus: async () => { return; },
           },
           proofreadWithOpenAI: async (section) => {
             if (section.id === 'section-2') {
@@ -180,6 +177,7 @@ describe('runProofreadingOrchestrator', () => {
                 changeSummary: result.change_summary,
               });
             },
+            updateSectionAiScore: async () => { return; },
             updateSessionStatus: async () => {
               didUpdateSessionStatus = true;
             },

@@ -7,6 +7,8 @@ import {
   type Section,
 } from './export.js';
 
+type ReferenceStyle = 'apa' | 'mla' | 'chicago' | 'ieee' | 'vancouver';
+
 const OPENAI_MODEL = 'gpt-4o';
 const MATCHER_TIMEOUT_MS = 60_000;
 const MAX_RETRY_ATTEMPTS = 1;
@@ -14,6 +16,74 @@ const RETRY_DELAY_MS = 1_000;
 
 const BODY_SECTION_TEXT_MAX = 800;
 const REFERENCE_TEXT_MAX = 300;
+
+// ── Citation marker formatting ────────────────────────────────────────────────
+
+/**
+ * Parse "Author, Year" or "Author et al., Year" from an APA/MLA reference string.
+ * Falls back to the ordinal number if parsing fails.
+ */
+function parseAuthorYear(text: string): { author: string; year: string } | null {
+  // Match "Lastname, F., et al. (YYYY)" or "Lastname, F., & Other, G. (YYYY)"
+  const apaMatch = text.match(/^([A-Z][^,(]+?)(?:,\s*[A-Z]\..*?)?\s*(?:et al\.)?\s*\((\d{4}[a-z]?)\)/);
+  if (apaMatch) {
+    const rawAuthor = apaMatch[1]!.trim();
+    const year = apaMatch[2]!;
+    // If there's an "&" it's multi-author, use first surname + et al.
+    const author = text.includes('&') || text.toLowerCase().includes('et al')
+      ? `${rawAuthor} et al.`
+      : rawAuthor;
+    return { author, year };
+  }
+  return null;
+}
+
+function buildCitationMarker(
+  style: ReferenceStyle,
+  positions: number[],
+  entries: Array<{ position: number; text: string }>,
+  ordinalLookup: Map<number, number>,
+): string {
+  if (positions.length === 0) return '';
+
+  const sorted = [...positions].sort((a, b) => a - b);
+
+  if (style === 'ieee') {
+    const nums = sorted.map((p) => ordinalLookup.get(p) ?? 0).filter((n) => n > 0);
+    return nums.map((n) => `[${n}]`).join('');
+  }
+
+  if (style === 'vancouver') {
+    const nums = sorted.map((p) => ordinalLookup.get(p) ?? 0).filter((n) => n > 0);
+    return `(${nums.join(', ')})`;
+  }
+
+  // APA / MLA / Chicago: author-year
+  const parts: string[] = [];
+  for (const pos of sorted) {
+    const entry = entries.find((e) => e.position === pos);
+    if (!entry) continue;
+    const parsed = parseAuthorYear(entry.text);
+    if (parsed) {
+      parts.push(`${parsed.author}, ${parsed.year}`);
+    } else {
+      // Fallback: use ordinal
+      const ord = ordinalLookup.get(pos);
+      if (ord) parts.push(`Ref ${ord}`);
+    }
+  }
+  return parts.length > 0 ? `(${parts.join('; ')})` : '';
+}
+
+function insertCitationIntoText(text: string, marker: string): string {
+  if (!marker) return text;
+  const trimmed = text.trimEnd();
+  // Insert before terminal punctuation if present
+  if (/[.!?]$/.test(trimmed)) {
+    return `${trimmed.slice(0, -1)} ${marker}${trimmed.slice(-1)}`;
+  }
+  return `${trimmed} ${marker}`;
+}
 
 export interface ReferenceMatchSummary {
   matchedSectionCount: number;
@@ -214,7 +284,7 @@ export async function suggestReferencesForSection(
   return matches.find((m) => m.section_id === sectionId)?.cited_reference_positions ?? [];
 }
 
-export async function matchReferencesToSections(sessionId: string): Promise<{
+export async function matchReferencesToSections(sessionId: string, referenceStyle: ReferenceStyle = 'apa'): Promise<{
   summary: ReferenceMatchSummary;
   sections: Section[];
 }> {
@@ -270,19 +340,31 @@ export async function matchReferencesToSections(sessionId: string): Promise<{
     matchMap.set(m.section_id, m.cited_reference_positions);
   }
 
+  // Build ordinal lookup: position → 1-based index in the reference list
+  const ordinalLookup = new Map<number, number>();
+  entries.forEach((entry, idx) => ordinalLookup.set(entry.position, idx + 1));
+
   // 6. Batch Supabase updates
   for (const section of bodySections) {
     const matched = matchMap.get(section.id) ?? [];
     const newReferenceText =
       matched.length > 0 ? JSON.stringify({ linked_reference_positions: matched }) : null;
 
+    // Insert citation markers into corrected_text (fall back to original_text as base)
+    const baseText = section.corrected_text || section.original_text;
+    let newCorrectedText: string | null = section.corrected_text;
+    if (matched.length > 0) {
+      const marker = buildCitationMarker(referenceStyle, matched, entries, ordinalLookup);
+      newCorrectedText = insertCitationIntoText(baseText, marker);
+    }
+
     const { error: updateError } = await supabase
       .from('sections')
-      .update({ reference_text: newReferenceText })
+      .update({ reference_text: newReferenceText, corrected_text: newCorrectedText })
       .eq('id', section.id);
 
     if (updateError) {
-      console.error('Failed to update reference_text for section', {
+      console.error('Failed to update section references', {
         sectionId: section.id,
         error: updateError.message,
       });

@@ -69,4 +69,4 @@
 - `.kit/rules/typescript/` — TypeScript-specific rules
 
 ## Active Task
-`.spec/tasks/task-001.md` — UI & Functionality Bug Fix Pass
+`.spec/tasks/task-002.md` — AI Detection & Humanization

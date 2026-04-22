@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminSupabaseClient, createUserScopedSupabaseClient } from '../lib/supabase.js';
 import { applySectionInstruction } from '../services/openai.js';
 import { matchReferencesToSections, suggestReferencesForSection, NoReferencesSectionError } from '../services/reference-matcher.js';
+import { humanizeSection } from '../services/humanizer.js';
 
 type SectionType = 'heading' | 'paragraph';
 type InsertPlacement = 'above' | 'below';
@@ -45,6 +46,8 @@ interface SectionRow {
   reference_text: string | null;
   final_text: string | null;
   change_summary: string | null;
+  ai_score: number | null;
+  humanized_text: string | null;
   status: SectionStatus;
   created_at: string;
   updated_at: string;
@@ -322,7 +325,7 @@ async function fetchOrderedSessionSections(sessionId: string): Promise<SectionRo
   const { data, error } = await client
     .from('sections')
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
     )
     .eq('session_id', sessionId)
     .order('position', { ascending: true });
@@ -339,7 +342,7 @@ async function fetchSectionById(sectionId: string): Promise<SectionRow | null> {
   const { data, error } = await client
     .from('sections')
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
     )
     .eq('id', sectionId)
     .maybeSingle();
@@ -400,7 +403,7 @@ async function insertSectionAtPosition(
       status: 'ready',
     })
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
     )
     .maybeSingle();
 
@@ -557,7 +560,7 @@ router.get('/sessions/:id', async (req: Request, res: Response) => {
   const { data: sections, error: sectionsError } = await supabase
     .from('sections')
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
     )
     .eq('session_id', sessionId)
     .order('position', { ascending: true });
@@ -595,7 +598,7 @@ router.get('/sections/:id', async (req: Request, res: Response) => {
   const { data: section, error } = await supabase
     .from('sections')
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
     )
     .eq('id', sectionId)
     .maybeSingle();
@@ -660,7 +663,7 @@ router.patch('/sections/:id', async (req: Request, res: Response) => {
     .update(updatePayload)
     .eq('id', sectionId)
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
     )
     .maybeSingle();
 
@@ -720,7 +723,7 @@ router.post('/sections/:id/instruct', async (req: Request, res: Response) => {
   const { data: section, error: fetchError } = await supabase
     .from('sections')
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
     )
     .eq('id', sectionId)
     .maybeSingle();
@@ -764,7 +767,7 @@ router.post('/sections/:id/instruct', async (req: Request, res: Response) => {
     })
     .eq('id', sectionId)
     .select(
-      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, status, created_at, updated_at',
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
     )
     .maybeSingle();
 
@@ -1121,8 +1124,13 @@ router.post('/sessions/:sessionId/match-references', async (req: Request, res: R
     return;
   }
 
+  const rawStyle = (req.body as Record<string, unknown>)?.reference_style;
+  const referenceStyle = ['apa', 'mla', 'chicago', 'ieee', 'vancouver'].includes(rawStyle as string)
+    ? (rawStyle as 'apa' | 'mla' | 'chicago' | 'ieee' | 'vancouver')
+    : 'apa';
+
   try {
-    const result = await matchReferencesToSections(sessionId);
+    const result = await matchReferencesToSections(sessionId, referenceStyle);
     res.status(200).json({ success: true, data: result });
   } catch (error) {
     if (error instanceof NoReferencesSectionError) {
@@ -1131,6 +1139,87 @@ router.post('/sessions/:sessionId/match-references', async (req: Request, res: R
     }
     serverError(res, error instanceof Error ? error.message : 'Reference matching failed.');
   }
+});
+
+router.post('/sections/:id/humanize', async (req: Request, res: Response) => {
+  const authToken = getVerifiedAccessToken(res);
+  const authenticatedUser = getAuthenticatedUser(res);
+  const sectionId = typeof req.params.id === 'string' ? req.params.id : '';
+
+  if (!authToken || !authenticatedUser) {
+    unauthorized(res);
+    return;
+  }
+
+  if (!isUuid(sectionId)) {
+    badRequest(res, 'Invalid section id format.');
+    return;
+  }
+
+  const supabase = createUserScopedSupabaseClient(authToken);
+  const { data: section, error: fetchError } = await supabase
+    .from('sections')
+    .select(
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
+    )
+    .eq('id', sectionId)
+    .maybeSingle();
+
+  if (fetchError) {
+    serverError(res, 'Failed to fetch section.');
+    return;
+  }
+
+  if (!section) {
+    const ownerId = await getSectionOwnerId(sectionId);
+    if (ownerId && ownerId !== authenticatedUser.id) {
+      forbidden(res);
+      return;
+    }
+    notFound(res);
+    return;
+  }
+
+  const typedSection = section as SectionRow;
+  const aiScore = typedSection.ai_score;
+
+  if (aiScore === null || aiScore < 61) {
+    badRequest(res, 'Humanize is only available for sections with an AI score of 61 or above.');
+    return;
+  }
+
+  const textToHumanize = typedSection.corrected_text ?? typedSection.original_text;
+
+  let humanizedText: string;
+  try {
+    humanizedText = await humanizeSection(textToHumanize, aiScore);
+  } catch (aiError) {
+    console.error('humanizeSection failed', {
+      sectionId,
+      error: aiError instanceof Error ? aiError.message : 'Unknown error',
+    });
+    serverError(res, 'Humanization failed. Please try again.');
+    return;
+  }
+
+  const { data: updatedSection, error: updateError } = await supabase
+    .from('sections')
+    .update({ humanized_text: humanizedText })
+    .eq('id', sectionId)
+    .select(
+      'id, session_id, position, section_type, heading_level, original_text, corrected_text, reference_text, final_text, change_summary, ai_score, humanized_text, status, created_at, updated_at',
+    )
+    .maybeSingle();
+
+  if (updateError || !updatedSection) {
+    serverError(res, 'Failed to save humanized text.');
+    return;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: updatedSection,
+  });
 });
 
 export { router as sectionsRouter };
