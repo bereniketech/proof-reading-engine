@@ -1158,36 +1158,27 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
   return (
     <div className="review-shell">
       <header className="review-header">
-        {/* Row 1: document identity + nav/utility actions */}
-        <div className="review-header-top">
-          <div className="review-header-left">
-            <span className="review-eyebrow">Proof-Reading Engine</span>
-            <h1 className="review-title">{payload.session.filename}</h1>
-          </div>
-          <div className="review-header-top-actions">
-            <button
-              type="button"
-              className="review-back-btn"
-              onClick={() => window.location.assign('/')}
-              title="Return to the dashboard"
-              aria-label="Back to dashboard"
-            >
-              ←
-            </button>
-          </div>
+        <button
+          type="button"
+          className="review-back-btn"
+          onClick={() => window.location.assign('/')}
+          title="Return to the dashboard"
+          aria-label="Back to dashboard"
+        >
+          ←
+        </button>
+        <div className="review-header-left">
+          <span className="review-eyebrow">Proof-Reading Engine</span>
+          <h1 className="review-title">{payload.session.filename}</h1>
         </div>
-        {/* Row 2: status + export actions */}
-        <div className="review-header-bottom">
-          <div className="review-header-bottom-left">
-            {isProofreading ? (
-              <span className="review-status-pill review-status-pill--active" aria-live="polite">
-                Proofreading&hellip; {pendingCount} section{pendingCount !== 1 ? 's' : ''} remaining
-              </span>
-            ) : (
-              <span className="review-status-pill review-status-pill--done">All sections ready</span>
-            )}
-          </div>
-          <div className="review-header-right">
+        <div className="review-header-right">
+          {isProofreading ? (
+            <span className="review-status-pill review-status-pill--active" aria-live="polite">
+              Proofreading&hellip; {pendingCount} section{pendingCount !== 1 ? 's' : ''} remaining
+            </span>
+          ) : (
+            <span className="review-status-pill review-status-pill--done">All sections ready</span>
+          )}
             <div className="download-dropdown" ref={downloadMenuRef}>
               <button
                 type="button"
@@ -1226,7 +1217,6 @@ export default function ReviewPage({ sessionId: propSessionId }: ReviewPageProps
                 </div>
               )}
             </div>
-          </div>
         </div>
       </header>
 
