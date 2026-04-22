@@ -178,7 +178,7 @@ export function DashboardPage(){
                 onChange={(e) => {
                   const cat = DOCUMENT_TYPE_CATEGORIES.find((c) => c.value === e.target.value);
                   setDocCategory(e.target.value);
-                  setDocumentType(cat?.types[0].value ?? 'general');
+                  setDocumentType(cat?.types[0]?.value ?? 'general');
                 }}
               >
                 {DOCUMENT_TYPE_CATEGORIES.map((c) => (
