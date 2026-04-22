@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { ProgressBar } from '../components/ProgressBar';
 import { MetricCard } from '../components/MetricCard';
 import { apiBaseUrl } from '../lib/constants';
